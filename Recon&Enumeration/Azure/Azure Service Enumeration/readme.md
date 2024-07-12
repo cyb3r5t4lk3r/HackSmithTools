@@ -23,12 +23,19 @@ Skript lze použít k:
 - Kontrole detekčních mechanismů, které odhalí přípravu možného útoku.
 
 # Důležité upozornění
+- Během provádění testování se vaše veřejná IP adresa může dostat na blacklist společnosti Microsoft
+- Během testování může dojít ke ztrátě internetového připojení v důsledku odesílání vysokého množství požadavků
 - Tyto nástroje jsou vytvořeny pro ofensivní bezpečnostní aktivity a nesmí být nikdy použity k nelegálním účelům.
 - Uživatelé přebírají veškerá rizika a odpovědnost za používání těchto nástrojů.
 - Autor se zříká veškeré odpovědnosti za jakékoliv zneužití nebo škody způsobené použitím těchto nástrojů.
 
 # Ukázka výstupu
 [Zde vložte ukázku výstupu skriptu nebo odkaz na video]
+
+# Vzorek základní detekce pomocí Kusto Query Language
+```kusto
+AzureDiagnostics
+```
 
 ## Speciální poděkování
 Rádi bychom vyjádřili speciální poděkování autorům projektu [MicroBurst](https://github.com/NetSPI/MicroBurst) za některé scripty a inspiraci. Jejich práce byla neocenitelná při vývoji a zdokonalování těchto nástrojů pro testování služeb Azure.
