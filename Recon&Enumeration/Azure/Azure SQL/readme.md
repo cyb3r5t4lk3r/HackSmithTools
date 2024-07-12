@@ -44,14 +44,27 @@ let var_TimeWindow = 60m;
 AzureDiagnostics
     | where TimeGenerated > ago(var_TimeWindow)
     | where Category == "SQLSecurityAuditEvents"
-    | project TimeGenerated, LogicalServerName_s, Resource, succeeded_s, action_name_s, client_ip_s,session_server_principal_name_s, server_principal_name_s, host_name_s
+    | project TimeGenerated, 
+              LogicalServerName_s, 
+              Resource, 
+              succeeded_s, 
+              action_name_s, 
+              client_ip_s,
+              session_server_principal_name_s, 
+              server_principal_name_s, 
+              host_name_s
     | where action_name_s in("DATABASE AUTHENTICATION SUCCEEDED", "DATABASE AUTHENTICATION FAILED")
     | sort by session_server_principal_name_s, TimeGenerated desc
     | extend PreviousValue = prev(action_name_s),
             PreviousUserName = prev(session_server_principal_name_s)
     | where session_server_principal_name_s == PreviousUserName
     | where isnotempty(PreviousValue)
-    | extend Status = iff((action_name_s == "DATABASE AUTHENTICATION FAILED") and (PreviousValue == "DATABASE AUTHENTICATION SUCCEEDED"), "Success attack", "Failed attack")
+    | extend Status = iff(
+                        (action_name_s == "DATABASE AUTHENTICATION FAILED") and 
+                        (PreviousValue == "DATABASE AUTHENTICATION SUCCEEDED"), 
+                        "Success attack", 
+                        "Failed attack"
+                      )
 
 //Detected operations on successful attack
 let var_TimeWindow = 60m;
@@ -59,21 +72,45 @@ let tb_AttackerIP = materialize (
     AzureDiagnostics
         | where TimeGenerated > ago(var_TimeWindow)
         | where Category == "SQLSecurityAuditEvents"
-        | project TimeGenerated, LogicalServerName_s, Resource, succeeded_s, action_name_s, client_ip_s,session_server_principal_name_s, server_principal_name_s, host_name_s
+        | project TimeGenerated, 
+                  LogicalServerName_s, 
+                  Resource, 
+                  succeeded_s, 
+                  action_name_s, 
+                  client_ip_s,
+                  session_server_principal_name_s, 
+                  server_principal_name_s, 
+                  host_name_s
         | where action_name_s in("DATABASE AUTHENTICATION SUCCEEDED", "DATABASE AUTHENTICATION FAILED")
         | sort by session_server_principal_name_s, TimeGenerated desc
         | extend PreviousValue = prev(action_name_s),
                 PreviousUserName = prev(session_server_principal_name_s)
         | where session_server_principal_name_s == PreviousUserName
         | where isnotempty(PreviousValue) 
-        | extend Status = iff((action_name_s == "DATABASE AUTHENTICATION FAILED") and (PreviousValue == "DATABASE AUTHENTICATION SUCCEEDED"), "Success attack", "Failed attack")
+        | extend Status = iff(
+                            (action_name_s == "DATABASE AUTHENTICATION FAILED") and 
+                            (PreviousValue == "DATABASE AUTHENTICATION SUCCEEDED"), 
+                            "Success attack", 
+                            "Failed attack"
+                          )
         | where Status == "Success attack"
         | distinct client_ip_s
 );
     AzureDiagnostics
         | where TimeGenerated > ago(var_TimeWindow)
         | where Category == "SQLSecurityAuditEvents"
-        | project TimeGenerated, LogicalServerName_s, Resource, succeeded_s, action_name_s, statement_s, client_ip_s,session_server_principal_name_s, server_principal_name_s, host_name_s
+        | project TimeGenerated, 
+                  LogicalServerName_s, 
+                  Resource, 
+                  succeeded_s, 
+                  action_name_s, 
+                  statement_s, 
+                  client_ip_s,
+                  session_server_principal_name_s, 
+                  server_principal_name_s, 
+                  host_name_s
         | where client_ip_s in(tb_AttackerIP)
-        | summarize count(), make_set(statement_s) by action_name_s
+        | summarize count(), 
+                    make_set(statement_s) 
+                      by action_name_s
 ```
