@@ -931,3 +931,4 @@ z
 zabbix
 zeus
 zimbra
+sqlserver1
