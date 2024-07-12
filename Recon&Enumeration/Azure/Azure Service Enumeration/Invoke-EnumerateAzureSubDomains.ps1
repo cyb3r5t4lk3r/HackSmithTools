@@ -1,19 +1,19 @@
 <#
     File: Invoke-EnumerateAzureSubDomains.ps1
     Author: Karl Fosaaen (@kfosaaen), NetSPI - 2018
-    Description: PowerShell functions for enumerating Azure/Microsoft hosted resources.
+    Description: PowerShell for enumerating Azure/Microsoft hosted resources.
     Parts of the Permutations.txt file borrowed from - https://github.com/brianwarehime/inSp3ctor
 #>
 
 <#
         .SYNOPSIS
-        PowerShell function for enumerating public Azure services.
+        PowerShell for enumerating public Azure services.
         .DESCRIPTION
         The function will check for valid Azure subdomains, based off of a base word, via DNS. 
         .PARAMETER Base
         The Base name to prepend/append with permutations.
         .PARAMETER Permutations
-        Specific permutations file to use. Default is permutations.txt (included in this repo)
+        Specific permutations file to use. Default is Invoke-EnumerateAzureSubDomains-permutations.txt (included in this repo)
         .EXAMPLE
         PS C:\> Invoke-EnumerateAzureSubDomains.ps1 -Base test123 -Verbose
 		Invoke-EnumerateAzureSubDomains -Base test12345678 -Verbose 
@@ -62,7 +62,7 @@
 
         [Parameter(Mandatory=$false,
         HelpMessage="Specific permutations file to use.")]
-        [string]$Permutations = "$PSScriptRoot\permutations.txt"
+        [string]$Permutations = "$PSScriptRoot\Invoke-EnumerateAzureSubDomains-permutations.txt"
 
     )
 

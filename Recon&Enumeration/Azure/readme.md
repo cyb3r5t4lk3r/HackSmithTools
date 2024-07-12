@@ -12,7 +12,4 @@ Tento adresář obsahuje scripty zaměřené na vnější testování služeb Az
 - Uživatelé přebírají veškerá rizika a odpovědnost za používání těchto nástrojů.
 - Autor se zříká veškeré odpovědnosti za jakékoliv zneužití nebo škody způsobené použitím těchto nástrojů.
 
-## Speciální poděkování
-Rádi bychom vyjádřili speciální poděkování autorům projektu [MicroBurst](https://github.com/NetSPI/MicroBurst) za některé scripty a inspiraci. Jejich práce byla neocenitelná při vývoji a zdokonalování těchto nástrojů pro testování služeb Azure.
-
 Těšíme se na vaši zpětnou vazbu, která pomůže vytvořit silnější a bezpečnější kybernetickou komunitu.

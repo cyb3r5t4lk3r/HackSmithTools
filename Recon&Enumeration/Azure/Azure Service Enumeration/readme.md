@@ -1,0 +1,34 @@
+# Azure Service Enumeration Tool
+
+## Co skript dělá
+Powershell script pro enumeraci (ověření existence) služeb v rámci prostředí Microsoft Azure
+
+### Možnosti použití
+- **Base**: Základ pro jméno služby, která bude permutována pro potřeby enumerace služeb.
+- **Permutations**: Seznam permutačních jmen oddělených na jednotlivé řádky, které se budou přidávat k base jménu a bude se kontrolovat jejich existence.
+- **Verbose**: Zapnutí detailního výpisu do konzole.
+
+## Příklad použití
+```powershell
+Invoke-EnumerateAzureSubDomains.ps1 -Base firma -Permutations .\Invoke-EnumerateAzureSubDomains-permutations.txt -Verbose
+```
+
+Tento příkaz se pokusí připojit k zadanému SQL Serveru pomocí uživatelských jmen a hesel z poskytnutých souborů v režimu Pitchfork s autentizací SQL.
+
+# Ofenzivní použití
+Skript lze použít k:
+
+- Enumeraci služeb běžících v prostředí Microsoft Azure.
+- Simulaci útoků za účelem zlepšení bezpečnostních opatření.
+- Kontrole detekčních mechanismů, které odhalí přípravu možného útoku.
+
+# Důležité upozornění
+- Tyto nástroje jsou vytvořeny pro ofensivní bezpečnostní aktivity a nesmí být nikdy použity k nelegálním účelům.
+- Uživatelé přebírají veškerá rizika a odpovědnost za používání těchto nástrojů.
+- Autor se zříká veškeré odpovědnosti za jakékoliv zneužití nebo škody způsobené použitím těchto nástrojů.
+
+# Ukázka výstupu
+[Zde vložte ukázku výstupu skriptu nebo odkaz na video]
+
+## Speciální poděkování
+Rádi bychom vyjádřili speciální poděkování autorům projektu [MicroBurst](https://github.com/NetSPI/MicroBurst) za některé scripty a inspiraci. Jejich práce byla neocenitelná při vývoji a zdokonalování těchto nástrojů pro testování služeb Azure.
