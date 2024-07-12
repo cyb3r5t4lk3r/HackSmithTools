@@ -169,6 +169,7 @@ $currentTest = 0
 switch ($AttackMode) {
     "Pitchfork" {
         foreach ($InitialCatalogue in $initialCatalogues) {
+            Write-Host "Initial Catalogue: $($InitialCatalogue)" -ForegroundColor Yellow
             for ($i = 0; $i -lt $usernames.Count -and $i -lt $passwords.Count; $i++) {
                 $currentTest++
                 $username = $usernames[$i]
@@ -181,6 +182,7 @@ switch ($AttackMode) {
     }
     "ClusterBomb" {
         foreach ($InitialCatalogue in $initialCatalogues) {
+            Write-Host "Initial Catalogue: $($InitialCatalogue)" -ForegroundColor Yellow
             foreach ($username in $usernames) {
                 foreach ($password in $passwords) {
                     $currentTest++
@@ -193,6 +195,7 @@ switch ($AttackMode) {
     }
     "PasswordSpray" {
         foreach ($InitialCatalogue in $initialCatalogues) {
+            Write-Host "Initial Catalogue: $($InitialCatalogue)" -ForegroundColor Yellow
             foreach ($password in $passwords) {
                 foreach ($username in $usernames) {
                     $currentTest++
