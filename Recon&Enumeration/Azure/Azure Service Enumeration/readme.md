@@ -31,7 +31,7 @@ Skript lze použít k:
 - Autor se zříká veškeré odpovědnosti za jakékoliv zneužití nebo škody způsobené použitím těchto nástrojů.
 
 # Ukázka výstupu
-[Zde vložte ukázku výstupu skriptu nebo odkaz na video]
+![Alt text](Media/Azure-Recon.gif)
 
 # Vzorek základní detekce pomocí Kusto Query Language
 ```kusto
