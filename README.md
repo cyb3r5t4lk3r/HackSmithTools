@@ -14,4 +14,7 @@
 - Uživatelé přebírají veškerá rizika a odpovědnost za používání těchto nástrojů.
 - Autor se zříká veškeré odpovědnosti za jakékoliv zneužití nebo škody způsobené použitím těchto nástrojů.
 
+### Detekční nástroje
+Tam kde to bude možné, tak přidáváme sepsané Query v jazyce Kusto Query Language, které lze využít jak v Microsoft Defender for Endpoint / Cloud / Servers, tak v Microsoft Sentinel nebo Azure Monitor.
+
 Těšíme se na vaši zpětnou vazbu, která pomůže vytvořit silnější a bezpečnější kybernetickou komunitu.
