@@ -18,7 +18,7 @@ Tento skript se pokouší připojit k Azure SQL Serveru pomocí kombinace uživa
 
 ## Příklad použití
 ```powershell
-.\Attack-AzureSQLServer.ps1 -Server "sqlserver.database.windows.net" -Port 1433 -InitialCatalogueFile "initialCatalogue.txt" -UsernamesFile "usernames.txt" -PasswordsFile "passwords.txt" -AttackMode "Pitchfork" -ConnectionMode "SQL"
+.\Access-AzureSQLDatabase.ps1 -Server "sqlserver.database.windows.net" -Port 1433 -InitialCatalogueFile "initialCatalogue.txt" -UsernamesFile "usernames.txt" -PasswordsFile "passwords.txt" -AttackMode "Pitchfork" -ConnectionMode "SQL"
 ```
 
 Tento příkaz se pokusí připojit k zadanému SQL Serveru pomocí uživatelských jmen a hesel z poskytnutých souborů v režimu Pitchfork s autentizací SQL.

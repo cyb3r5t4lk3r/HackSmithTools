@@ -28,7 +28,7 @@
     The type of connection string used depending on the allowed authentication method for the SQL database. The options are "EntraPasswordless", "SQL", "EntraPassword", or "EntraIntegrated".
 
 .EXAMPLE
-    .\Attack-AzureSQLServer.ps1 -Server "sqlserver.database.windows.net" -Port 1433 -InitialCatalogueFile "initialCatalogue.txt" -UsernamesFile "usernames.txt" -PasswordsFile "passwords.txt" -AttackMode "Pitchfork" -ConnectionMode "SQL"
+    .\Access-AzureSQLDatabase.ps1 -Server "sqlserver.database.windows.net" -Port 1433 -InitialCatalogueFile "initialCatalogue.txt" -UsernamesFile "usernames.txt" -PasswordsFile "passwords.txt" -AttackMode "Pitchfork" -ConnectionMode "SQL"
     This command will attempt to connect to the specified SQL Server using the usernames and passwords from the provided files in Pitchfork mode with SQL authentication.
 
 .NOTES
