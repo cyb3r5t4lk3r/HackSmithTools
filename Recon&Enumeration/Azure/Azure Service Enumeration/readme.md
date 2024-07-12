@@ -23,6 +23,8 @@ Skript lze použít k:
 - Kontrole detekčních mechanismů, které odhalí přípravu možného útoku.
 
 # Důležité upozornění
+- Během provádění testování se vaše veřejná IP adresa může dostat na blacklist společnosti Microsoft
+- Během testování může dojít ke ztrátě internetového připojení v důsledku odesílání vysokého množství požadavků
 - Tyto nástroje jsou vytvořeny pro ofensivní bezpečnostní aktivity a nesmí být nikdy použity k nelegálním účelům.
 - Uživatelé přebírají veškerá rizika a odpovědnost za používání těchto nástrojů.
 - Autor se zříká veškeré odpovědnosti za jakékoliv zneužití nebo škody způsobené použitím těchto nástrojů.
