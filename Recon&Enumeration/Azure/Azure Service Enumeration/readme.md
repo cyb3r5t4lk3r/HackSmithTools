@@ -6,11 +6,12 @@ Powershell script pro enumeraci (ověření existence) služeb v rámci prostře
 ### Možnosti použití
 - **Base**: Základ pro jméno služby, která bude permutována pro potřeby enumerace služeb.
 - **Permutations**: Seznam permutačních jmen oddělených na jednotlivé řádky, které se budou přidávat k base jménu a bude se kontrolovat jejich existence.
+- **ReconMode**: Můžete nastavit na jakou službu konkrétně cílíte a na výběr máte z těchto: "All", "MicrosoftHostedDomain", "AppService", "StorageAccount", "Office365", "Databases", "KeyVaults", "CDN", "SearchService", "API", "AzureContainerRegistry"
 - **Verbose**: Zapnutí detailního výpisu do konzole.
 
 ## Příklad použití
 ```powershell
-Invoke-EnumerateAzureSubDomains.ps1 -Base firma -Permutations .\Invoke-EnumerateAzureSubDomains-permutations.txt -Verbose
+Invoke-EnumerateAzureSubDomains.ps1 -Base firma -Permutations .\Invoke-EnumerateAzureSubDomains-permutations.txt -ReconMode All -Verbose
 ```
 
 Tento příkaz se pokusí připojit k zadanému SQL Serveru pomocí uživatelských jmen a hesel z poskytnutých souborů v režimu Pitchfork s autentizací SQL.
