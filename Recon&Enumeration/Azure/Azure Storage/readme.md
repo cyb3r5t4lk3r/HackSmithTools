@@ -9,7 +9,7 @@ Tento skript se připojuje k Azure Storage Account pomocí poskytnutých connect
 
 ### Příklad použití
 ```powershell
-
+.\Access-AzureStorageAccount.ps1 -connectionStringsFile "connectionStrings.txt" -blobsToDownloadCount 5
 ```
 
 ## Ofenzivní použití
