@@ -88,44 +88,96 @@
 					'azurecr.io'='Azure Container Registry'
 					}
     
-    switch ($ReconMode) {
-        All {
-            $subLookup = $subLookupDomain
-        }
-        MicrosoftHostedDomain {
-            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'Microsoft Hosted Domain' }
-        }
-        AppServices {
-            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'App Services' -or $_.Value -eq 'App Services - Management' }
-        }
-        StorageAccount {
-            $subLookup = $subLookupDomain | Where-Object { $_.Value -like 'Storage Accounts*' }
-        }
-        Office365 {
-            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'Email' -or $_.Value -eq 'SharePoint' }
-        }
-        Databases {
-            $subLookup = $subLookupDomain | Where-Object { $_.Value -like 'Databases*' }
-        }
-        KeyVaults {
-            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'Key Vaults' }
-        }
-        CDN {
-            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'CDN' }
-        }
-        SearchService {
-            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'Search Appliance' }
-        }   
-        API {
-            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'API Services' }
-        }
-        AzureContainerRegistry {
-            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'Azure Container Registry' }
-        }
-        Default {
-            $subLookup = $subLookupDomain
-        }
-    }
+                    $subLookup = @{}
+
+                    switch ($ReconMode) {
+                        'All' {
+                            $subLookup = $subLookupDomain
+                        }
+                        'MicrosoftHostedDomain' {
+                            $subLookup = @{}
+                            $subLookupDomain.GetEnumerator() | ForEach-Object {
+                                if ($_.Value -eq 'Microsoft Hosted Domain') {
+                                    $subLookup[$_.Key] = $_.Value
+                                }
+                            }
+                        }
+                        'AppServices' {
+                            $subLookup = @{}
+                            $subLookupDomain.GetEnumerator() | ForEach-Object {
+                                if ($_.Value -eq 'App Services' -or $_.Value -eq 'App Services - Management') {
+                                    $subLookup[$_.Key] = $_.Value
+                                }
+                            }
+                        }
+                        'StorageAccount' {
+                            $subLookup = @{}
+                            $subLookupDomain.GetEnumerator() | ForEach-Object {
+                                if ($_.Value -like 'Storage Accounts*') {
+                                    $subLookup[$_.Key] = $_.Value
+                                }
+                            }
+                        }
+                        'Office365' {
+                            $subLookup = @{}
+                            $subLookupDomain.GetEnumerator() | ForEach-Object {
+                                if ($_.Value -eq 'Email' -or $_.Value -eq 'SharePoint') {
+                                    $subLookup[$_.Key] = $_.Value
+                                }
+                            }
+                        }
+                        'Databases' {
+                            $subLookup = @{}
+                            $subLookupDomain.GetEnumerator() | ForEach-Object {
+                                if ($_.Value -like 'Databases*') {
+                                    $subLookup[$_.Key] = $_.Value
+                                }
+                            }
+                        }
+                        'KeyVaults' {
+                            $subLookup = @{}
+                            $subLookupDomain.GetEnumerator() | ForEach-Object {
+                                if ($_.Value -eq 'Key Vaults') {
+                                    $subLookup[$_.Key] = $_.Value
+                                }
+                            }
+                        }
+                        'CDN' {
+                            $subLookup = @{}
+                            $subLookupDomain.GetEnumerator() | ForEach-Object {
+                                if ($_.Value -eq 'CDN') {
+                                    $subLookup[$_.Key] = $_.Value
+                                }
+                            }
+                        }
+                        'SearchService' {
+                            $subLookup = @{}
+                            $subLookupDomain.GetEnumerator() | ForEach-Object {
+                                if ($_.Value -eq 'Search Appliance') {
+                                    $subLookup[$_.Key] = $_.Value
+                                }
+                            }
+                        }
+                        'API' {
+                            $subLookup = @{}
+                            $subLookupDomain.GetEnumerator() | ForEach-Object {
+                                if ($_.Value -eq 'API Services') {
+                                    $subLookup[$_.Key] = $_.Value
+                                }
+                            }
+                        }
+                        'AzureContainerRegistry' {
+                            $subLookup = @{}
+                            $subLookupDomain.GetEnumerator() | ForEach-Object {
+                                if ($_.Value -eq 'Azure Container Registry') {
+                                    $subLookup[$_.Key] = $_.Value
+                                }
+                            }
+                        }
+                        Default {
+                            $subLookup = $subLookupDomain
+                        }
+                    }
 
     $runningList = @()
     $lookupResult = ""
