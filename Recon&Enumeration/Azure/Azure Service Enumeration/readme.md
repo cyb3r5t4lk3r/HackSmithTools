@@ -30,8 +30,8 @@ Skript lze použít k:
 - Uživatelé přebírají veškerá rizika a odpovědnost za používání těchto nástrojů.
 - Autor se zříká veškeré odpovědnosti za jakékoliv zneužití nebo škody způsobené použitím těchto nástrojů.
 
-# Ukázka výstupu
-![Alt text](Media/Azure-Recon.gif)
+# Ukázka použití a výstupu
+![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-Recon.gif)
 
 # Vzorek základní detekce pomocí Kusto Query Language
 ```kusto
