@@ -1,0 +1,6 @@
+DefaultEndpointsProtocol=https;AccountName=StorageAccount1;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
+DefaultEndpointsProtocol=https;AccountName=StorageAccount1;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
+DefaultEndpointsProtocol=https;AccountName=StorageAccount1;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
+DefaultEndpointsProtocol=https;AccountName=StorageAccount1;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
+DefaultEndpointsProtocol=https;AccountName=StorageAccount1;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
+DefaultEndpointsProtocol=https;AccountName=StorageAccount1;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net

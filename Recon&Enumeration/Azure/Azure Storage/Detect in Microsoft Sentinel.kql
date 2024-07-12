@@ -1,0 +1,17 @@
+//KQL detection Query 1 - Time Series Analysis
+StorageBlobLogs
+| where TimeGenerated > ago(4h)
+| where OperationName !in("CreateContainer","PutBlob","RenewBlobLease","SetBlobMetadata")
+| where OperationName !in("ListBlobs","GetBlobProperties")
+| summarize count() by OperationName, bin(TimeGenerated,1m)
+| render columnchart 
+
+//KQL detection Query 2 - Grid view for downloaded files
+StorageBlobLogs
+| where TimeGenerated > ago(4h)
+| where OperationName == "GetBlob"
+| extend FileName = tostring(array_reverse(split(ObjectKey,"/"))[0])
+| extend SourceIP = tostring(split(CallerIpAddress,":")[0])
+| project TimeGenerated, AccountName, AuthenticationType, SourceIP, FileName, Category, OperationName, UserAgentHeader
+| summarize count() by FileName, SourceIP
+| extend LocationCountry = geo_info_from_ip_address(SourceIP)["country"]
