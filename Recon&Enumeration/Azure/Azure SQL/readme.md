@@ -38,8 +38,9 @@ Skript lze použít k:
 ![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-SQL.gif)
 
 # Detekce v Microsoft Sentinel pomocí Kusto Query Language
+
+### Detekce v rámci TimeLine vyšetřování
 ```kusto
-//detect success brute force attack
 let var_TimeWindow = 60m;
 AzureDiagnostics
     | where TimeGenerated > ago(var_TimeWindow)
@@ -65,8 +66,13 @@ AzureDiagnostics
                         "Success attack", 
                         "Failed attack"
                       )
+    | summarize count() by Status, bin(TimeGenerated,5m) 
+    | render columnchart with(title='Time analysis attack to Azure SQL Server')
+```
+![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-SQL-KQL-TimeSeriesAnalysis.png)
 
-//Detected operations on successful attack
+### Detekce aktivit provedených úspěšně ověřeným útočníkem
+```kusto
 let var_TimeWindow = 60m;
 let tb_AttackerIP = materialize (
     AzureDiagnostics
@@ -114,3 +120,5 @@ let tb_AttackerIP = materialize (
                     make_set(statement_s) 
                       by action_name_s
 ```
+
+![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-SQL-KQL-DetectOperations.png)
