@@ -5,10 +5,6 @@
     Parts of the Permutations.txt file borrowed from - https://github.com/brianwarehime/inSp3ctor
 #>
 
-
-Function Invoke-EnumerateAzureSubDomains
-{
-
 <#
         .SYNOPSIS
         PowerShell function for enumerating public Azure services.
@@ -19,7 +15,7 @@ Function Invoke-EnumerateAzureSubDomains
         .PARAMETER Permutations
         Specific permutations file to use. Default is permutations.txt (included in this repo)
         .EXAMPLE
-        PS C:\> Invoke-EnumerateAzureSubDomains -Base test123 -Verbose
+        PS C:\> Invoke-EnumerateAzureSubDomains.ps1 -Base test123 -Verbose
 		Invoke-EnumerateAzureSubDomains -Base test12345678 -Verbose 
 		VERBOSE: Found test12345678.cloudapp.net
 		VERBOSE: Found test12345678.scm.azurewebsites.net
@@ -161,4 +157,3 @@ Function Invoke-EnumerateAzureSubDomains
         }
     }
     $TempTbl | sort Service
-}
