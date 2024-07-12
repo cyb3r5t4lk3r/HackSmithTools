@@ -32,5 +32,10 @@ Skript lze použít k:
 # Ukázka výstupu
 [Zde vložte ukázku výstupu skriptu nebo odkaz na video]
 
+# Vzorek základní detekce pomocí Kusto Query Language
+```kusto
+AzureDiagnostics
+```
+
 ## Speciální poděkování
 Rádi bychom vyjádřili speciální poděkování autorům projektu [MicroBurst](https://github.com/NetSPI/MicroBurst) za některé scripty a inspiraci. Jejich práce byla neocenitelná při vývoji a zdokonalování těchto nástrojů pro testování služeb Azure.
