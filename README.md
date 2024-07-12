@@ -1,17 +1,17 @@
-# HackSmithScripts
+# HackSmithTools
 
-**HackSmithScripts** is a public GitHub repository that offers a wide range of tools and scripts focused on hacking, pentesting, red teaming, and vulnerability scanning. This repository is designed for cybersecurity professionals, penetration testers, ethical hackers, and anyone interested in gaining deeper insights into security techniques. These tools are developed with assistance from ChatGPT.
+**HackSmithTools** je veřejné GitHub repository, které nabízí postupně rozvíjející se sadu nástrojů a skriptů zaměřených na hacking, pentesting, red teaming a vulnerability scanning. Toto repository je určeno pro profesionály v oblasti kybernetické bezpečnosti, penetrační testery, etické hackery a všechny, kteří mají zájem o hlubší poznání bezpečnostních technik. Tyto nástroje byly vytvořeny s asistencí ChatGPT.
 
-### What You'll Find Here:
-- **PowerShell Scripts**: Automation tasks, system management scripts, information gathering, and vulnerability detection.
-- **Python Scripts**: Tools for analysis, exploitation, data collection, and automation of various penetration tests.
-- **Red Teaming Tools**: Techniques and scripts for attack simulation, security measure testing, and incident response.
-- **Vulnerability Scanning Tools**: Scripts and tools for identifying and assessing vulnerabilities in systems and applications.
-- **Documentation and Guides**: Detailed tutorials and usage examples for each tool, making it easy to implement and customize them to your needs.
+### Co zde najdete:
+- **PowerShell Skripty**: Automatizace úloh, skripty pro správu systémů, sběr informací a detekce zranitelností.
+- **Python Skripty**: Nástroje pro analýzu, exploitaci, sběr dat a automatizaci různých penetračních testů.
+- **Red Teaming Nástroje**: Techniky a skripty pro simulaci útoků, testování bezpečnostních opatření a reakce na incidenty.
+- **Vulnerability Scanning Tools**: Skripty a nástroje pro identifikaci a vyhodnocení zranitelností v systémech a aplikacích.
+- **Dokumentace a Příručky**: Podrobné návody a příklady použití každého nástroje, které usnadní jejich implementaci a přizpůsobení vašim potřebám.
 
-### Important Notice:
-- These tools are created for offensive security activities and must never be used for illegal purposes.
-- Users assume all risks and responsibilities for using these tools.
-- The creator disclaims all liability for any misuse or damage resulting from the use of these tools.
+### Důležité upozornění:
+- Tyto nástroje jsou vytvořeny pro ofensivní bezpečnostní aktivity a nesmí být nikdy použity k nelegálním účelům.
+- Uživatelé přebírají veškerá rizika a odpovědnost za používání těchto nástrojů.
+- Autor se zříká veškeré odpovědnosti za jakékoliv zneužití nebo škody způsobené použitím těchto nástrojů.
 
-We look forward to your feedback to help create a stronger and more secure cybersecurity community.
+Těšíme se na vaši zpětnou vazbu, která pomůže vytvořit silnější a bezpečnější kybernetickou komunitu.
