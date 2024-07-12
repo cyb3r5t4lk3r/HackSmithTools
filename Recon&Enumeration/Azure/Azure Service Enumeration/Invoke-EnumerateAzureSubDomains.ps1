@@ -59,15 +59,15 @@
         ValueFromPipelineByPropertyName = $true,
         HelpMessage="Base name to use.")]
         [string]$Base = "",
-
         [Parameter(Mandatory=$false,
         HelpMessage="Specific permutations file to use.")]
-        [string]$Permutations = "$PSScriptRoot\Invoke-EnumerateAzureSubDomains-permutations.txt"
-
+        [string]$Permutations = "$PSScriptRoot\Invoke-EnumerateAzureSubDomains-permutations.txt",
+        [ValidateSet("All", "MicrosoftHostedDomain", "AppServices", "StorageAccount", "Office365", "Databases", "KeyVaults", "CDN", "SearchService", "API", "AzureContainerRegistry")]
+        [string]$ReconMode = "All"
     )
 
     # Domain = Service hashtable for easier lookups
-    $subLookup =  @{'onmicrosoft.com'='Microsoft Hosted Domain';
+    $subLookupDomain =  @{'onmicrosoft.com'='Microsoft Hosted Domain';
 					'scm.azurewebsites.net'='App Services - Management';
 					'azurewebsites.net'='App Services';
 					'p.azurewebsites.net'='App Services';
@@ -87,6 +87,45 @@
 					'azure-api.net'='API Services';
 					'azurecr.io'='Azure Container Registry'
 					}
+    
+    switch ($ReconMode) {
+        All {
+            $subLookup = $subLookupDomain
+        }
+        MicrosoftHostedDomain {
+            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'Microsoft Hosted Domain' }
+        }
+        AppServices {
+            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'App Services' -or $_.Value -eq 'App Services - Management' }
+        }
+        StorageAccount {
+            $subLookup = $subLookupDomain | Where-Object { $_.Value -like 'Storage Accounts*' }
+        }
+        Office365 {
+            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'Email' -or $_.Value -eq 'SharePoint' }
+        }
+        Databases {
+            $subLookup = $subLookupDomain | Where-Object { $_.Value -like 'Databases*' }
+        }
+        KeyVaults {
+            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'Key Vaults' }
+        }
+        CDN {
+            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'CDN' }
+        }
+        SearchService {
+            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'Search Appliance' }
+        }   
+        API {
+            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'API Services' }
+        }
+        AzureContainerRegistry {
+            $subLookup = $subLookupDomain | Where-Object { $_.Value -eq 'Azure Container Registry' }
+        }
+        Default {
+            $subLookup = $subLookupDomain
+        }
+    }
 
     $runningList = @()
     $lookupResult = ""
