@@ -35,4 +35,4 @@ Skript lze použít k:
 - Autor se zříká veškeré odpovědnosti za jakékoliv zneužití nebo škody způsobené použitím těchto nástrojů.
 
 # Ukázka výstupu
-[Zde vložte ukázku výstupu skriptu nebo odkaz na video]
+!Alt(https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-SQL.gif)
