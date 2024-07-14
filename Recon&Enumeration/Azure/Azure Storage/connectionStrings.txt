@@ -1,6 +1,3 @@
-DefaultEndpointsProtocol=https;AccountName=StorageAccount1;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
-DefaultEndpointsProtocol=https;AccountName=StorageAccount1;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
-DefaultEndpointsProtocol=https;AccountName=StorageAccount1;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
-DefaultEndpointsProtocol=https;AccountName=StorageAccount1;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
-DefaultEndpointsProtocol=https;AccountName=StorageAccount1;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
-DefaultEndpointsProtocol=https;AccountName=StorageAccount1;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
+DefaultEndpointsProtocol=https;AccountName=defopsstorage;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
+DefaultEndpointsProtocol=https;AccountName=defopsstorage;AccountKey=yYfKHaLzrqsZtuQuqCSS/9ci6hTki3NFMt0IcSH1JXO/+ha8YIhCwbXniJK37PvbYT1KFXFelqWX+AStKVfjDQ==;EndpointSuffix=core.windows.net
+BlobEndpoint=https://defopsstorage.blob.core.windows.net/;QueueEndpoint=https://defopsstorage.queue.core.windows.net/;FileEndpoint=https://defopsstorage.file.core.windows.net/;TableEndpoint=https://defopsstorage.table.core.windows.net/;SharedAccessSignature=sv=2022-11-02&ss=bfqt&srt=sco&sp=rwlacupiytfx&se=2024-07-14T15:19:55Z&st=2024-07-14T07:19:55Z&spr=https&sig=6FeL0QSXme80F%2FWnoDrMMlAbSZgbxUkSYPwdkLSmjtY%3D
