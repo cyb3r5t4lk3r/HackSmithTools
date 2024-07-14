@@ -26,7 +26,7 @@
     .\Access-AzureStorageAccount.ps1 -ReconMode "AuthenticateMode" -connectionStringsFile "connectionStrings.txt" -blobsToDownloadCount 5
     This command will read the connection strings from "connectionStrings.txt" and download 5 blobs from each container in the identified storage accounts.
 
-    .\Access-AzureStorageAccount.ps1 -ReconMode "PublicMode" -StorageAccountName "publicstorageaccount" -blobsToDownloadCount 5 -DictionaryFile .\small.txt
+    .\Access-AzureStorageAccount.ps1 -ReconMode "PublicMode" -StorageAccountName "publicstorageaccount" -DictionaryFile .\small.txt
     This command will anonymously access the specified public storage account and download 5 blobs from each container.
 
 .NOTES

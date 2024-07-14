@@ -1,15 +1,24 @@
 # Přístup a stahování dat z blobů z Azure Storage Account
 
 ## Co skript dělá
-Tento skript se připojuje k Azure Storage Account pomocí poskytnutých connection stringů, identifikuje dostupné kontejnery a stáhne zadaný počet blobů z každého kontejneru.
+Tento skript se připojuje k Azure Storage Account pomocí poskytnutých connection stringů nebo na základě definice veřejného přístupu, identifikuje dostupné kontejnery a stáhne zadaný počet blobů z každého kontejneru. V případě PublicMode stahuje všechny soubory přístupné v blobu, což je identifikováno pomocí odpovědního XML v otevřeném blobu.
 
 ### Možnosti použití
+- **ReconMode**: Nastavení módu skenování blobů ve Storage Accountu
+    - **AuthenticateMode**: Vyžaduje, aby existoval soubor s connections (SAS nebo Access Key), které se budou zkoušet při testování.
+    - **PublicMode**: Testuje se vždy jeden název Azure Storage Accountu a musí být doplněn seznam s názvy blobů, které se budou testovat.
 - **connectionStringsFile**: Cesta k souboru obsahujícímu connection stringy, každý na novém řádku.
 - **blobsToDownloadCount**: Počet blobů, které se mají stáhnout z každého identifikovaného kontejneru.
+- **StorageAccountName**: Název storage accountu, který se bude testovat v rámci PublicMode
+- **DictionaryFile**: Název souboru, který obsahuje slovník názvů blobů, které se budou v kontejneru testovat
+
 
 ### Příklad použití
 ```powershell
-.\Access-AzureStorageAccount.ps1 -connectionStringsFile "connectionStrings.txt" -blobsToDownloadCount 5
+.\Access-AzureStorageAccount.ps1 -ReconMode AuthenticateMode -connectionStringsFile "connectionStrings.txt" -blobsToDownloadCount 5
+
+.\Access-AzureStorageAccount.ps1 -ReconMode PublicMode -StorageAccountName publicstorageaccount -DictionaryFile .\small.txt
+
 ```
 
 ## Ofenzivní použití
@@ -24,7 +33,11 @@ Skript lze použít k:
 - Autor se zříká veškeré odpovědnosti za jakékoliv zneužití nebo škody způsobené použitím těchto nástrojů.
 
 ## Ukázka výstupu
-![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-Storage.gif)
+### Autentizovaný sken
+![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-Storage-Authenticate.gif)
+
+### Neautentizovaný sken do public storage
+![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-Storage-Public.gif)
 
 ## Detekce v Microsoft Sentinel pomocí Kusto Query Language
 
