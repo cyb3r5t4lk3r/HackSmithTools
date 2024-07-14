@@ -41,9 +41,26 @@ Skript lze použít k:
 
 ## Detekce v Microsoft Sentinel pomocí Kusto Query Language
 
-#### Detekce v rámci TimeLine vyšetřování
+#### Detekce anonymního přístupu do Storage Accountu a stažení obsahu
 ```kusto
-//KQL detection Query 1 - Time Series Analysis
+let var_TimeWindow = 15m;
+let tb_PotentialAttackerIp = 
+    StorageBlobLogs
+    | where TimeGenerated > ago(var_TimeWindow)
+    | where AuthenticationType contains "anonymous"
+    | where Uri contains "?restype=container&comp=list" //caller IP enumerate XML with files in storage
+    | distinct CallerIpAddress
+;
+StorageBlobLogs
+| where TimeGenerated > ago(var_TimeWindow)
+| where CallerIpAddress in(tb_PotentialAttackerIp)
+| where AuthenticationType contains "anonymous"
+| project TimeGenerated, AccountName, OperationName, StatusCode, StatusText, ObjectKey, CallerIpAddress, Category
+```
+
+
+#### Detekce ověřeného přístupu a stažení dat v rámci TimeLine vyšetřování
+```kusto
 StorageBlobLogs
 | where TimeGenerated > ago(4h)
 | where OperationName !in("CreateContainer","PutBlob","RenewBlobLease","SetBlobMetadata")
@@ -52,18 +69,19 @@ StorageBlobLogs
 | render columnchart 
 ```
 
-![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-Storage-KQL-TimeLine.gif)
+![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-Storage-KQL-TimeLine.png)
 
-#### Zobrazení tabulky výsledku stažených souborů
+#### Zobrazení tabulky výsledku stažených souborů skrze ověřený přístup
 ```kusto
-//KQL detection Query 2 - Grid view for downloaded files
+let var_TimeWindow = 4h;
 StorageBlobLogs
-| where TimeGenerated > ago(4h)
+| where TimeGenerated > ago(var_TimeWindow)
 | where OperationName == "GetBlob"
 | extend FileName = tostring(array_reverse(split(ObjectKey,"/"))[0])
 | extend SourceIP = tostring(split(CallerIpAddress,":")[0])
+| where StatusText contains "success"
 | project TimeGenerated, AccountName, AuthenticationType, SourceIP, FileName, Category, OperationName, UserAgentHeader
-| summarize count() by FileName, SourceIP
+| summarize count() by AccountName, FileName, SourceIP
 | extend LocationCountry = geo_info_from_ip_address(SourceIP)["country"]
 ```
-![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-Storage-KQL-GridView.gif)
+![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-Storage-KQL-GridView.png)
