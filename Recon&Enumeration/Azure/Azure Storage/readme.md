@@ -57,7 +57,7 @@ StorageBlobLogs
 | where AuthenticationType contains "anonymous"
 | project TimeGenerated, AccountName, OperationName, StatusCode, StatusText, ObjectKey, CallerIpAddress, Category
 ```
-![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-Storage-KPQL-Public-Access.png)
+![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-Storage-KQL-Public-Access.png)
 
 #### Detekce ověřeného přístupu a stažení dat v rámci TimeLine vyšetřování
 ```kusto
