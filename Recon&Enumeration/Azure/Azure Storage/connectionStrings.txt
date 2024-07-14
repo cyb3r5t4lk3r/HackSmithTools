@@ -1,1 +1,3 @@
-connectionstrings
+DefaultEndpointsProtocol=https;AccountName=defopsstorage;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
+DefaultEndpointsProtocol=https;AccountName=defopsstorage;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
+DefaultEndpointsProtocol=https;AccountName=defopsstorage;AccountKey=StorageAccessKeyOrSASKey==;EndpointSuffix=core.windows.net
