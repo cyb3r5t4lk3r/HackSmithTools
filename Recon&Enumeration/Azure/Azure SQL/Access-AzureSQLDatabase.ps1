@@ -68,6 +68,7 @@ Write-Host "Attack to Azure SQL Server" -ForegroundColor Cyan
 Write-Host "--> Server Name: $($Server)" -ForegroundColor Blue
 Write-Host "--> Server Port: $($Port)" -ForegroundColor Blue
 Write-Host "--> Attack Mode: $($AttackMode)" -ForegroundColor Blue
+Write-Host "--> Your Public IP address: $((Invoke-WebRequest -UseBasicParsing ifconfig.me/ip).Content.Trim())"  -ForegroundColor Blue
 Write-Host "-----------------------------------------------------------------" -ForegroundColor DarkYellow
 
 # Funkce pro kontrolu dostupnosti portu

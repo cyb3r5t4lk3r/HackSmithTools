@@ -77,6 +77,7 @@ if ($ReconMode -eq "PublicMode") {
     Write-Host "--> Storage account name: $($StorageAccountName)" -ForegroundColor Blue
 }
 Write-Host "--> How many files from each blob will be downloaded: $($blobsToDownloadCount)" -ForegroundColor Blue
+Write-Host "--> Your Public IP address: $((Invoke-WebRequest -UseBasicParsing ifconfig.me/ip).Content.Trim())"  -ForegroundColor Blue
 Write-Host "-----------------------------------------------------------------" -ForegroundColor DarkYellow
 
 # Kontrola existence souboru v AuthenticateMode
