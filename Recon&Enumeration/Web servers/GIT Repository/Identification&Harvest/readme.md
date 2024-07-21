@@ -39,11 +39,7 @@ V rámci techniky Google Dorking je možné provádět veřejné vyhledávání 
 
 ## Ukázka spuštění a výstupu
 #### Identifikace v rámci jedné nebo více web aplikací
-<<<<<<< HEAD
 ![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Git_Identification.gif)
-=======
-![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Git-Identification.gif)
->>>>>>> 9f1073fbb837ef6b37cb3b5ff4bf59a7f5e5e887
 
 #### Stažení z přístupného úložiště
 ![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Git_Download_Files.gif)
