@@ -8,7 +8,7 @@ Skript kontroluje existenci specifických souborů a adresářů v rootu webu, z
 
 ## Veřejná identifikace dostupných adresářů .git s Directory Browsing zranizelností
 
-V rámci techniky Google Dorking je možné provádět veřejné vyhledávání přístupných adresářů .git, a to následujícím Google Search výrazem `Google Dorking intext:"index of /.git" "parent directory"`
+V rámci techniky Google Dorking je možné provádět veřejné vyhledávání přístupných adresářů .git, a to následujícím Google Search výrazem Google Dorking `intext:"index of /.git" "parent directory"`
 
 ## Použití
 
