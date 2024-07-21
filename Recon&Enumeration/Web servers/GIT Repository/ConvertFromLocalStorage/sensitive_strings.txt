@@ -1,0 +1,12 @@
+password
+heslo
+username
+jmeno
+uzivatelske_jmeno
+uzivatel
+api_key
+key
+klic
+secret
+private_key
+token
