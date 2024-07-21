@@ -34,6 +34,12 @@ kde:
 
 ## Ukázka spuštění a výstupu
 
+#### Konverze do čitelného formátu
+![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Git_ConvertFromGitFolder.gif)
+
+#### Analýza souborů
+![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Git_AnalyseFiles.gif)
+
 ### Extrakce souborů
 
 ```powershell
