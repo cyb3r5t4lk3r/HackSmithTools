@@ -17,3 +17,6 @@ Tento adresář obsahuje nástroje ve formě skriptů, které jsou určeny pro i
 - Uživatelé přebírají veškerá rizika a odpovědnost za používání těchto nástrojů.
 - Autor se zříká veškeré odpovědnosti za jakékoliv zneužití nebo škody způsobené použitím těchto nástrojů.
 
+## Odkazy
+https://www.zdnet.com/article/new-gitjacker-tool-lets-you-find-git-folders-exposed-online/
+https://github.com/liamg/gitjacker/tree/master
