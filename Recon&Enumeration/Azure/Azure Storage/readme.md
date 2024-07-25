@@ -39,6 +39,9 @@ Skript lze použít k:
 ### Neautentizovaný sken do public storage
 ![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/Azure-Storage-Public.gif)
 
+## Odkazy k tématu
+https://braropad.medium.com/azure-pentesting-exploiting-the-anonymous-access-to-the-blob-storage-draft-english-d80f3831a590
+
 ## Detekce v Microsoft Sentinel pomocí Kusto Query Language
 
 #### Detekce anonymního přístupu do Storage Accountu a stažení obsahu
