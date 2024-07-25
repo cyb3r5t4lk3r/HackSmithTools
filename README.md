@@ -16,3 +16,6 @@
 
 ### Detekční nástroje
 Tam kde to bude možné, tak přidáváme sepsané Query v jazyce Kusto Query Language, které lze využít jak v Microsoft Defender for Endpoint / Cloud / Servers, tak v Microsoft Sentinel nebo Azure Monitor.
+
+### Veřejné bug bounty
+https://chaos.projectdiscovery.io/#/
