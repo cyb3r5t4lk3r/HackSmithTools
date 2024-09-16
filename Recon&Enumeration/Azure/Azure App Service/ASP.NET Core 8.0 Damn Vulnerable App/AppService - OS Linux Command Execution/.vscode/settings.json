@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/046a7078-b56c-47b2-83a8-997367d103b2/resourceGroups/RG_SZK_UAT_LMSTACK_WE/providers/Microsoft.Web/sites/mdctest",
+    "appService.deploySubpath": "publish"
+}

@@ -1,0 +1,23 @@
+is_global = true
+build_property.TargetFramework = net8.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = MyApp
+build_property.RootNamespace = MyApp
+build_property.ProjectDir = D:\GitHubRepos\Internal-Tools-and-Scripts\ASP.NET Simple Vulnerable App\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = D:\GitHubRepos\Internal-Tools-and-Scripts\ASP.NET Simple Vulnerable App
+build_property._RazorSourceGeneratorDebug = 
+
+[D:/GitHubRepos/Internal-Tools-and-Scripts/ASP.NET Simple Vulnerable App/Pages/ExecuteCommand.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRXhlY3V0ZUNvbW1hbmQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 

