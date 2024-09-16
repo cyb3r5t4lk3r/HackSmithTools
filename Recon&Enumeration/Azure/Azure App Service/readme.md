@@ -9,7 +9,6 @@ Tato zranitelná aplikace napsaná v ASP.NET Core 8.0 demonstruje útoky typu **
 
 - URL aplikace: `http://<server_or_app_service_url>/ExecuteCommand`
 - Zranitelnost: Command injection (logováno na straně serveru).
-- Nasazení: Pro více informací a nasazení postupujte podle pokynů v přiloženém [README](./DamnVulnerableApp/README.md).
 
 ### Další nástroje (bude doplněno později)
 
