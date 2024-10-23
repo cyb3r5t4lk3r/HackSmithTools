@@ -61,7 +61,7 @@
         [string]$Base = "",
         [Parameter(Mandatory=$false,
         HelpMessage="Specific permutations file to use.")]
-        [string]$Permutations = "$PSScriptRoot\Invoke-EnumerateAzureSubDomains-permutations.txt",
+        [string]$Permutations = ".\Invoke-EnumerateAzureSubDomains-permutations.txt",
         [ValidateSet("All", "MicrosoftHostedDomain", "AppServices", "StorageAccount", "Office365", "Databases", "KeyVaults", "CDN", "SearchService", "API", "AzureContainerRegistry")]
         [string]$ReconMode = "All"
     )
@@ -179,6 +179,7 @@
                         }
                     }
 
+    Write-host "Check0" -ForegroundColor Red
     $runningList = @()
     $lookupResult = ""
 
@@ -193,16 +194,17 @@
     $TempTbl.Columns.Add("Service") | Out-Null
 
     $iter = 0
-    
+    Write-host "Check1" -ForegroundColor Red
     # Check Each Subdomain
     $subLookup.Keys | ForEach-Object{
 
         # Track the progress
         $iter++
         $subprogress = ($iter/$subLookup.Count)*100
+        Write-host "Check2" -ForegroundColor Red
 
         Write-Progress -Status 'Progress..' -Activity "Enumerating $Base subdomains for $_ subdomain" -PercentComplete $subprogress
-
+        Write-Host "[$(Get-Date -Format "dd.mm.yyyy HH:mm:ss")] [VERBOSE] Enumerating $Base subdomains for $_ subdomain"
         # Check the base word
         $lookup = $Base+'.'+$_
         
@@ -218,7 +220,7 @@
 
         # Chek Permutations (postpend word, prepend word)
         foreach($word in $PermutationContent){
-
+            Write-host "Check3" -ForegroundColor Red
             # Storage Accounts can't have special characters
             if(($_ -ne 'file.core.windows.net') -or ($_ -ne 'blob.core.windows.net')){
                 # Base-Permutation
