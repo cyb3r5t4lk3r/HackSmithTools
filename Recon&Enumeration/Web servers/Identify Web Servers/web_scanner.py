@@ -129,7 +129,7 @@ def parse_nmap_output(filename: str) -> List[Tuple[str, int]]:
 def get_web_title(ip: str, port: int, timeout: int = 5) -> Optional[dict]:
     """
     Zkontroluje webový server pomocí HTTP hlaviček.
-    Považuje jakoukoliv validní HTTP odpověď za důkaz webserveru.
+    Detailní výpis všech kroků a přesměrování.
     """
     print(f"\nKontroluji {ip}:{port}")
     
@@ -170,6 +170,8 @@ def get_web_title(ip: str, port: int, timeout: int = 5) -> Optional[dict]:
                 headers=headers
             )
             
+            print(f"    ← Získána odpověď: HTTP {initial_response.status_code}")
+            
             # Pokud dostaneme jakoukoliv HTTP odpověď, je to webserver
             if initial_response.status_code:
                 result.update({
@@ -190,7 +192,7 @@ def get_web_title(ip: str, port: int, timeout: int = 5) -> Optional[dict]:
                         elif not redirect_url.startswith(('http://', 'https://')):
                             redirect_url = f"{protocol}://{ip}:{port}/{redirect_url}"
                         
-                        print(f"  → Nalezeno přesměrování na: {redirect_url}")
+                        print(f"    → Přesměrování na: {redirect_url}")
                         result['redirect_url'] = redirect_url
                         
                         # Zkusíme následovat přesměrování
@@ -201,6 +203,8 @@ def get_web_title(ip: str, port: int, timeout: int = 5) -> Optional[dict]:
                                 allow_redirects=True,
                                 headers=headers
                             )
+                            
+                            print(f"    ← Odpověď z přesměrování: HTTP {redirect_response.status_code}")
                             
                             # Aktualizujeme informace z přesměrované odpovědi
                             result.update({
@@ -217,41 +221,45 @@ def get_web_title(ip: str, port: int, timeout: int = 5) -> Optional[dict]:
                                 except:
                                     result['title'] = "Cannot parse title"
                         except Exception as e:
-                            print(f"  → Nelze následovat přesměrování: {str(e)}")
-                            # I když přesměrování selže, stále máme webserver
+                            print(f"    ✗ Nelze následovat přesměrování: {str(e)}")
                 
                 # Výpis detailů
-                print(f"  ✓ Nalezen webový server ({protocol})")
+                print(f"\n  ✓ Nalezen webový server ({protocol})")
                 print(f"    Status: {result['status_code']}")
                 print(f"    Server: {result['server']}")
                 if result['title']:
                     print(f"    Title: {result['title']}")
-                if result['redirect_url']:
-                    print(f"    Přesměrování: {result['redirect_url']}")
-                if result.get('final_url'):
-                    print(f"    Finální URL: {result['final_url']}")
                 
-                # Výpis hlaviček
-                print("    Hlavičky:")
+                print("\n    Detaily přesměrování:")
+                if result['redirect_url']:
+                    print(f"    → Původní přesměrování: {result['redirect_url']}")
+                if result.get('final_url') and result.get('final_url') != url:
+                    print(f"    → Finální URL: {result['final_url']}")
+                else:
+                    print("    → Bez přesměrování")
+                
+                print("\n    Hlavičky odpovědi:")
                 for header, value in result['headers'].items():
                     print(f"      {header}: {value}")
                 
                 return result
                 
         except requests.exceptions.SSLError:
-            print(f"  → SSL Error na {url}, zkouším další protokol")
+            print(f"    → SSL Error")
             continue
         except requests.exceptions.ConnectionError:
-            print(f"  ✗ Connection Error na {url}")
+            print(f"    ✗ Connection Error")
             result['error'] = "Connection Error"
         except requests.exceptions.Timeout:
-            print(f"  ✗ Timeout na {url}")
+            print(f"    ✗ Timeout")
             result['error'] = "Timeout"
         except Exception as e:
-            print(f"  ✗ Neočekávaná chyba na {url}: {str(e)}")
+            print(f"    ✗ Neočekávaná chyba: {str(e)}")
             result['error'] = f"Other Error: {str(e)}"
     
     return result
+
+
 
 def scan_targets(targets: List[Tuple[str, int]], max_workers: int = 5) -> pd.DataFrame:
     """Skenuje všechny cíle paralelně."""
