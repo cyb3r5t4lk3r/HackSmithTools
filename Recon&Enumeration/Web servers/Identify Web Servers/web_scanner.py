@@ -5,7 +5,7 @@
 Web Server Scanner
 -----------------
 Author: [Jméno autora]
-Version: 1.4.0
+Version: 1.4.1
 Last update: 2024-12-17
 
 Description:
@@ -14,20 +14,6 @@ Description:
     Sleduje přesměrování a poskytuje detailní informace o nalezených webových serverech.
     Automaticky filtruje známé porty pro jiné služby než web servery.
     Podporuje paralelní zpracování a komplexní logování.
-
-Usage:
-    python web_scanner.py -i <nmap_output_file> -o <output_file> [-v] [-d] [-w workers] [-t timeout]
-
-Arguments:
-    -i, --input     : Vstupní soubor s NMAP grepovatelným výstupem
-    -o, --output    : Výstupní CSV soubor s výsledky
-    -v, --verbose   : Zapne podrobné logování
-    -d, --debug     : Zapne debug mód
-    -w, --workers   : Počet paralelních vláken (default: 5)
-    -t, --timeout   : Timeout pro připojení v sekundách (default: 5)
-
-Required packages:
-    pip install requests beautifulsoup4 pandas tabulate colorama
 """
 
 import requests
@@ -45,6 +31,7 @@ import os
 import re
 from tabulate import tabulate
 from colorama import init, Fore, Back, Style
+import json
 
 # Inicializace colorama pro Windows
 init()
@@ -52,7 +39,7 @@ init()
 # Vypnutí varování pro necertifikované HTTPS
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
-# Seznam portů, které chceme ignorovat (známé služby, které nejsou web servery)
+# Seznam portů, které chceme ignorovat
 IGNORED_PORTS = {21, 22, 23, 135, 139, 445, 3389}
 
 def setup_logging(verbose: bool = False, debug: bool = False) -> None:
@@ -80,10 +67,10 @@ def setup_logging(verbose: bool = False, debug: bool = False) -> None:
         ]
     )
 
-def parse_nmap_output(filename: str) -> List[Tuple[str, int]]:
-    """Parsuje NMAP grepovatelný výstup a vrací seznam IP adres a portů."""
+def parse_nmap_output(filename: str) -> Tuple[List[Tuple[str, int, str]], Dict[str, str]]:
+    """Parsuje NMAP grepovatelný výstup a vrací seznam IP adres, portů a hostname."""
     targets = []
-    hosts_info: Dict[str, str] = {}  # Pro ukládání mapování IP -> hostname
+    hosts_info: Dict[str, str] = {}
     
     try:
         with open(filename, 'r') as f:
@@ -92,7 +79,6 @@ def parse_nmap_output(filename: str) -> List[Tuple[str, int]]:
         for line in lines:
             line = line.strip()
             
-            # Zpracování řádku s informacemi o hostu
             if 'Status: Up' in line:
                 parts = line.split()
                 ip = parts[1]
@@ -100,20 +86,18 @@ def parse_nmap_output(filename: str) -> List[Tuple[str, int]]:
                 hosts_info[ip] = hostname
                 print(f"Nalezen host: {ip} ({hostname})")
             
-            # Zpracování řádku s porty
             elif 'Ports:' in line:
                 ip = line.split()[1]
                 ports_section = line.split('Ports: ')[1]
+                hostname = hosts_info.get(ip, '')
                 
-                # Rozdělení na jednotlivé porty
                 port_entries = ports_section.split(',')
                 
                 for entry in port_entries:
                     if '/open/tcp//' in entry:
                         port = int(entry.split('/')[0])
                         if port not in IGNORED_PORTS:
-                            targets.append((ip, port))
-                            hostname = hosts_info.get(ip, 'unknown')
+                            targets.append((ip, port, hostname))
                             print(f"Nalezen otevřený port: {ip} ({hostname}) : {port}")
     
     except FileNotFoundError:
@@ -124,17 +108,15 @@ def parse_nmap_output(filename: str) -> List[Tuple[str, int]]:
         sys.exit(1)
     
     print(f"\nCelkem nalezeno {len(targets)} potenciálních webových serverů k otestování")
-    return targets
+    return targets, hosts_info
 
-def get_web_title(ip: str, port: int, timeout: int = 5) -> Optional[dict]:
-    """
-    Zkontroluje webový server pomocí HTTP hlaviček.
-    Detailní výpis všech kroků a přesměrování.
-    """
-    print(f"\nKontroluji {ip}:{port}")
+def get_web_title(ip: str, port: int, hostname: str, timeout: int = 5) -> Optional[dict]:
+    """Zkontroluje webový server pomocí HTTP hlaviček."""
+    print(f"\nKontroluji {ip}:{port} ({hostname})")
     
     result = {
         'ip': ip,
+        'hostname': hostname,
         'port': port,
         'is_web': False,
         'protocol': None,
@@ -162,17 +144,15 @@ def get_web_title(ip: str, port: int, timeout: int = 5) -> Optional[dict]:
         print(f"  Zkouším {url}")
         
         try:
-            # Nejprve zkusíme GET request bez sledování přesměrování
             initial_response = session.get(
                 url,
                 timeout=timeout,
-                allow_redirects=False,  # Nejdřív bez přesměrování
+                allow_redirects=False,
                 headers=headers
             )
             
             print(f"    ← Získána odpověď: HTTP {initial_response.status_code}")
             
-            # Pokud dostaneme jakoukoliv HTTP odpověď, je to webserver
             if initial_response.status_code:
                 result.update({
                     'is_web': True,
@@ -182,11 +162,9 @@ def get_web_title(ip: str, port: int, timeout: int = 5) -> Optional[dict]:
                     'server': initial_response.headers.get('Server', 'Unknown')
                 })
                 
-                # Zpracování přesměrování
                 if initial_response.status_code in [301, 302, 303, 307, 308]:
                     redirect_url = initial_response.headers.get('Location')
                     if redirect_url:
-                        # Upravíme relativní URL na absolutní
                         if redirect_url.startswith('/'):
                             redirect_url = f"{protocol}://{ip}:{port}{redirect_url}"
                         elif not redirect_url.startswith(('http://', 'https://')):
@@ -195,7 +173,6 @@ def get_web_title(ip: str, port: int, timeout: int = 5) -> Optional[dict]:
                         print(f"    → Přesměrování na: {redirect_url}")
                         result['redirect_url'] = redirect_url
                         
-                        # Zkusíme následovat přesměrování
                         try:
                             redirect_response = session.get(
                                 redirect_url,
@@ -205,14 +182,8 @@ def get_web_title(ip: str, port: int, timeout: int = 5) -> Optional[dict]:
                             )
                             
                             print(f"    ← Odpověď z přesměrování: HTTP {redirect_response.status_code}")
+                            result['final_url'] = redirect_response.url
                             
-                            # Aktualizujeme informace z přesměrované odpovědi
-                            result.update({
-                                'final_url': redirect_response.url,
-                                'status_code': redirect_response.status_code
-                            })
-                            
-                            # Pokud máme HTML obsah, získáme title
                             if 'text/html' in redirect_response.headers.get('Content-Type', '').lower():
                                 try:
                                     soup = BeautifulSoup(redirect_response.text, 'html.parser')
@@ -222,25 +193,14 @@ def get_web_title(ip: str, port: int, timeout: int = 5) -> Optional[dict]:
                                     result['title'] = "Cannot parse title"
                         except Exception as e:
                             print(f"    ✗ Nelze následovat přesměrování: {str(e)}")
+                else:
+                    result['final_url'] = url
                 
-                # Výpis detailů
                 print(f"\n  ✓ Nalezen webový server ({protocol})")
                 print(f"    Status: {result['status_code']}")
                 print(f"    Server: {result['server']}")
                 if result['title']:
                     print(f"    Title: {result['title']}")
-                
-                print("\n    Detaily přesměrování:")
-                if result['redirect_url']:
-                    print(f"    → Původní přesměrování: {result['redirect_url']}")
-                if result.get('final_url') and result.get('final_url') != url:
-                    print(f"    → Finální URL: {result['final_url']}")
-                else:
-                    print("    → Bez přesměrování")
-                
-                print("\n    Hlavičky odpovědi:")
-                for header, value in result['headers'].items():
-                    print(f"      {header}: {value}")
                 
                 return result
                 
@@ -259,17 +219,15 @@ def get_web_title(ip: str, port: int, timeout: int = 5) -> Optional[dict]:
     
     return result
 
-
-
-def scan_targets(targets: List[Tuple[str, int]], max_workers: int = 5) -> pd.DataFrame:
+def scan_targets(targets: List[Tuple[str, int, str]], max_workers: int = 5) -> pd.DataFrame:
     """Skenuje všechny cíle paralelně."""
     results = []
     print(f"\nZačínám skenování {len(targets)} cílů s {max_workers} vlákny")
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_ip = {
-            executor.submit(get_web_title, ip, port): (ip, port) 
-            for ip, port in targets
+            executor.submit(get_web_title, ip, port, hostname): (ip, port, hostname) 
+            for ip, port, hostname in targets
         }
         
         for future in concurrent.futures.as_completed(future_to_ip):
@@ -282,10 +240,9 @@ def scan_targets(targets: List[Tuple[str, int]], max_workers: int = 5) -> pd.Dat
 def format_table_row(row: pd.Series) -> List[str]:
     """Formátuje řádek tabulky s barevným zvýrazněním."""
     is_web = row['is_web']
-    has_redirect = bool(row['redirect_info'])
+    has_redirect = bool(row['redirect_url'])
     has_error = bool(row['error'])
     
-    # Základní barva pro řádek
     if is_web:
         color = Fore.GREEN
     elif has_error:
@@ -293,43 +250,27 @@ def format_table_row(row: pd.Series) -> List[str]:
     else:
         color = Fore.WHITE
     
-    # Příprava dat pro řádek
     formatted_row = [
         f"{color}{row['ip']}{Style.RESET_ALL}",
+        f"{color}{row['hostname'] if pd.notna(row['hostname']) else ''}{Style.RESET_ALL}",
         f"{color}{row['port']}{Style.RESET_ALL}",
+        f"{color}{row['protocol'] if pd.notna(row['protocol']) else ''}{Style.RESET_ALL}",
         f"{Fore.GREEN}✓{Style.RESET_ALL}" if is_web else f"{Fore.RED}✗{Style.RESET_ALL}",
-        f"{color}{row['web_info']}{Style.RESET_ALL}",
         f"{color}{str(row['status_code']) if pd.notna(row['status_code']) else ''}{Style.RESET_ALL}",
         f"{color}{row['title'] if pd.notna(row['title']) else ''}{Style.RESET_ALL}",
+        f"{color}{row['final_url'] if pd.notna(row['final_url']) else ''}{Style.RESET_ALL}",
     ]
-    
-    # Přidání informace o přesměrování
-    if has_redirect:
-        redirect_info = f"{Fore.YELLOW}→ {row['redirect_info']}{Style.RESET_ALL}"
-    else:
-        redirect_info = ''
-    formatted_row.append(redirect_info)
-    
-    # Přidání chybové hlášky
-    if has_error:
-        error_info = f"{Fore.RED}{row['error']}{Style.RESET_ALL}"
-    else:
-        error_info = ''
-    formatted_row.append(error_info)
     
     return formatted_row
 
 def print_results_table(df: pd.DataFrame) -> None:
     """Vytiskne výsledky jako formátovanou tabulku."""
-    # Příprava dat pro tabulku
     table_data = []
     for _, row in df.iterrows():
         table_data.append(format_table_row(row))
     
-    # Definice hlavičky tabulky
-    headers = ['IP', 'Port', 'Web', 'Server Info', 'Status', 'Title', 'Redirect', 'Error']
+    headers = ['IP', 'Hostname', 'Port', 'Protocol', 'Web', 'Status', 'Title', 'Final URL']
     
-    # Vytištění tabulky
     print("\nVýsledky skenování:")
     print(tabulate(table_data, headers=headers, tablefmt='grid'))
 
@@ -353,7 +294,7 @@ def main():
     print(f"Timeout: {args.timeout}s")
     print("=" * 24 + "\n")
     
-    targets = parse_nmap_output(args.input)
+    targets, hosts_info = parse_nmap_output(args.input)
     
     if not targets:
         print("Nebyly nalezeny žádné potenciální webové servery")
@@ -361,30 +302,14 @@ def main():
     
     results_df = scan_targets(targets, args.workers)
     
-    # Přidání sloupců pro lepší čitelnost
-    results_df['web_info'] = results_df.apply(
-        lambda row: (
-            f"{'✓' if row['is_web'] else '✗'} "
-            f"{row['protocol'] + ' ' if row['protocol'] else ''}"
-            f"{row['server'] if row['server'] else ''}"
-        ),
-        axis=1
-    )
-    
-    results_df['redirect_info'] = results_df.apply(
-        lambda row: (
-            f"{row['redirect_url']}" if row['redirect_url'] else
-            f"{row['final_url']}" if row['final_url'] and row['final_url'] != f"{row['protocol']}://{row['ip']}:{row['port']}" else
-            ""
-        ),
-        axis=1
-    )
-    
     # Setřídění a uložení výsledků
     output_columns = [
-        'ip', 'port', 'is_web', 'web_info', 'title', 'redirect_info',
-        'status_code', 'error'
+        'ip', 'hostname', 'port', 'protocol', 'is_web', 'status_code',
+        'title', 'final_url', 'redirect_url', 'headers'
     ]
+    
+    # Konverze headers na string pro CSV export
+    results_df['headers'] = results_df['headers'].apply(lambda x: json.dumps(x) if x else None)
     
     results_df[output_columns].to_csv(args.output, index=False)
     print(f"\nVýsledky byly uloženy do souboru {args.output}")
