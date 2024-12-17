@@ -183,7 +183,7 @@ def get_web_title(ip: str, port: int, hostname: str, timeout: int = 5) -> Option
             initial_response = session.get(
                 url,
                 timeout=timeout,
-                allow_redirects=False,
+                allow_redirects=False,  # Důležité: nejprve bez sledování přesměrování
                 headers=headers
             )
             
@@ -198,23 +198,13 @@ def get_web_title(ip: str, port: int, hostname: str, timeout: int = 5) -> Option
                     'server': initial_response.headers.get('Server', 'Unknown')
                 })
                 
-                # Získání title z počáteční odpovědi
-                if initial_response.status_code < 300 or initial_response.status_code >= 400:
-                    result['title'] = get_response_title(initial_response)
-                    result['final_url'] = url
-                
                 # Zpracování přesměrování
                 if initial_response.status_code in [301, 302, 303, 307, 308]:
                     redirect_url = initial_response.headers.get('Location')
                     if redirect_url:
-                        # Upravíme relativní URL na absolutní
-                        if redirect_url.startswith('/'):
-                            redirect_url = f"{protocol}://{ip}:{port}{redirect_url}"
-                        elif not redirect_url.startswith(('http://', 'https://')):
-                            redirect_url = f"{protocol}://{ip}:{port}/{redirect_url}"
-                        
-                        print(f"    → Přesměrování na: {redirect_url}")
+                        # Vždy zachovat původní URL přesměrování
                         result['redirect_url'] = redirect_url
+                        print(f"    → Přesměrování na: {redirect_url}")
                         
                         # Zkusíme následovat přesměrování
                         try:
@@ -228,22 +218,25 @@ def get_web_title(ip: str, port: int, hostname: str, timeout: int = 5) -> Option
                             print(f"    ← Odpověď z přesměrování: HTTP {redirect_response.status_code}")
                             result['final_url'] = redirect_response.url
                             
-                            # Získání title z přesměrované odpovědi
-                            result['title'] = get_response_title(redirect_response)
-                            
+                            if 'text/html' in redirect_response.headers.get('Content-Type', '').lower():
+                                result['title'] = get_response_title(redirect_response)
                         except Exception as e:
                             print(f"    ✗ Nelze následovat přesměrování: {str(e)}")
-                            result['error'] = f"Redirect error: {str(e)}"
+                            # Zachováme informaci o přesměrování i když ho nemůžeme následovat
+                else:
+                    # Pokud není přesměrování, získáme title z původní odpovědi
+                    result['title'] = get_response_title(initial_response)
+                    result['final_url'] = url
                 
                 # Výpis detailů
                 print(f"\n  ✓ Nalezen webový server ({protocol})")
                 print(f"    Status: {result['status_code']}")
                 print(f"    Server: {result['server']}")
-                print(f"    Title: {result['title']}")
                 if result['redirect_url']:
-                    print(f"    Redirect: {result['redirect_url']}")
+                    print(f"    Redirect URL: {result['redirect_url']}")
                 if result['final_url']:
                     print(f"    Final URL: {result['final_url']}")
+                print(f"    Title: {result['title']}")
                 
                 return result
                 
@@ -261,6 +254,7 @@ def get_web_title(ip: str, port: int, hostname: str, timeout: int = 5) -> Option
             result['error'] = f"Other Error: {str(e)}"
     
     return result
+
 
 def scan_targets(targets: List[Tuple[str, int, str]], max_workers: int = 5) -> pd.DataFrame:
     """Skenuje všechny cíle paralelně."""
