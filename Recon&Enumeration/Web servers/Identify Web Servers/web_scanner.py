@@ -14,6 +14,20 @@ Description:
     Sleduje přesměrování a poskytuje detailní informace o nalezených webových serverech.
     Automaticky filtruje známé porty pro jiné služby než web servery.
     Podporuje paralelní zpracování a komplexní logování.
+
+Usage:
+    python web_scanner.py -i <nmap_output_file> -o <output_file> [-v] [-d] [-w workers] [-t timeout]
+
+Arguments:
+    -i, --input     : Vstupní soubor s NMAP grepovatelným výstupem
+    -o, --output    : Výstupní CSV soubor s výsledky
+    -v, --verbose   : Zapne podrobné logování
+    -d, --debug     : Zapne debug mód
+    -w, --workers   : Počet paralelních vláken (default: 5)
+    -t, --timeout   : Timeout pro připojení v sekundách (default: 5)
+
+Required packages:
+    pip install requests beautifulsoup4 pandas tabulate colorama
 """
 
 import requests
@@ -139,6 +153,28 @@ def get_web_title(ip: str, port: int, hostname: str, timeout: int = 5) -> Option
         'Accept-Encoding': 'gzip, deflate'
     }
     
+    def extract_title(html_content):
+        """Extrahuje title z HTML obsahu."""
+        try:
+            soup = BeautifulSoup(html_content, 'html.parser')
+            if soup.title:
+                return soup.title.string.strip()
+            else:
+                # Pokud není tag title, zkusíme najít první nadpis
+                first_heading = soup.find(['h1', 'h2', 'h3'])
+                if first_heading:
+                    return first_heading.get_text().strip()
+            return "No title found"
+        except Exception as e:
+            print(f"    ✗ Chyba při extrakci title: {str(e)}")
+            return "Error extracting title"
+
+    def get_response_title(response):
+        """Získá title z HTTP response."""
+        if 'text/html' in response.headers.get('Content-Type', '').lower():
+            return extract_title(response.text)
+        return "Not HTML content"
+    
     for protocol in protocols:
         url = f"{protocol}://{ip}:{port}"
         print(f"  Zkouším {url}")
@@ -162,9 +198,16 @@ def get_web_title(ip: str, port: int, hostname: str, timeout: int = 5) -> Option
                     'server': initial_response.headers.get('Server', 'Unknown')
                 })
                 
+                # Získání title z počáteční odpovědi
+                if initial_response.status_code < 300 or initial_response.status_code >= 400:
+                    result['title'] = get_response_title(initial_response)
+                    result['final_url'] = url
+                
+                # Zpracování přesměrování
                 if initial_response.status_code in [301, 302, 303, 307, 308]:
                     redirect_url = initial_response.headers.get('Location')
                     if redirect_url:
+                        # Upravíme relativní URL na absolutní
                         if redirect_url.startswith('/'):
                             redirect_url = f"{protocol}://{ip}:{port}{redirect_url}"
                         elif not redirect_url.startswith(('http://', 'https://')):
@@ -173,6 +216,7 @@ def get_web_title(ip: str, port: int, hostname: str, timeout: int = 5) -> Option
                         print(f"    → Přesměrování na: {redirect_url}")
                         result['redirect_url'] = redirect_url
                         
+                        # Zkusíme následovat přesměrování
                         try:
                             redirect_response = session.get(
                                 redirect_url,
@@ -184,23 +228,22 @@ def get_web_title(ip: str, port: int, hostname: str, timeout: int = 5) -> Option
                             print(f"    ← Odpověď z přesměrování: HTTP {redirect_response.status_code}")
                             result['final_url'] = redirect_response.url
                             
-                            if 'text/html' in redirect_response.headers.get('Content-Type', '').lower():
-                                try:
-                                    soup = BeautifulSoup(redirect_response.text, 'html.parser')
-                                    title = soup.title.string if soup.title else "No title found"
-                                    result['title'] = title.strip() if title else None
-                                except:
-                                    result['title'] = "Cannot parse title"
+                            # Získání title z přesměrované odpovědi
+                            result['title'] = get_response_title(redirect_response)
+                            
                         except Exception as e:
                             print(f"    ✗ Nelze následovat přesměrování: {str(e)}")
-                else:
-                    result['final_url'] = url
+                            result['error'] = f"Redirect error: {str(e)}"
                 
+                # Výpis detailů
                 print(f"\n  ✓ Nalezen webový server ({protocol})")
                 print(f"    Status: {result['status_code']}")
                 print(f"    Server: {result['server']}")
-                if result['title']:
-                    print(f"    Title: {result['title']}")
+                print(f"    Title: {result['title']}")
+                if result['redirect_url']:
+                    print(f"    Redirect: {result['redirect_url']}")
+                if result['final_url']:
+                    print(f"    Final URL: {result['final_url']}")
                 
                 return result
                 
@@ -258,7 +301,8 @@ def format_table_row(row: pd.Series) -> List[str]:
         f"{Fore.GREEN}✓{Style.RESET_ALL}" if is_web else f"{Fore.RED}✗{Style.RESET_ALL}",
         f"{color}{str(row['status_code']) if pd.notna(row['status_code']) else ''}{Style.RESET_ALL}",
         f"{color}{row['title'] if pd.notna(row['title']) else ''}{Style.RESET_ALL}",
-        f"{color}{row['final_url'] if pd.notna(row['final_url']) else ''}{Style.RESET_ALL}",
+        f"{color}{row['redirect_url'] if pd.notna(row['redirect_url']) else ''}{Style.RESET_ALL}",
+        f"{color}{row['final_url'] if pd.notna(row['final_url']) else ''}{Style.RESET_ALL}"
     ]
     
     return formatted_row
@@ -269,7 +313,7 @@ def print_results_table(df: pd.DataFrame) -> None:
     for _, row in df.iterrows():
         table_data.append(format_table_row(row))
     
-    headers = ['IP', 'Hostname', 'Port', 'Protocol', 'Web', 'Status', 'Title', 'Final URL']
+    headers = ['IP', 'Hostname', 'Port', 'Protocol', 'Web', 'Status', 'Title', 'Redirect URL', 'Final URL']
     
     print("\nVýsledky skenování:")
     print(tabulate(table_data, headers=headers, tablefmt='grid'))
@@ -305,27 +349,50 @@ def main():
     # Setřídění a uložení výsledků
     output_columns = [
         'ip', 'hostname', 'port', 'protocol', 'is_web', 'status_code',
-        'title', 'final_url', 'redirect_url', 'headers'
+        'title', 'redirect_url', 'final_url', 'headers'
     ]
     
     # Konverze headers na string pro CSV export
     results_df['headers'] = results_df['headers'].apply(lambda x: json.dumps(x) if x else None)
     
-    results_df[output_columns].to_csv(args.output, index=False)
+    # Seřazení výsledků podle IP a portu
+    results_df = results_df.sort_values(['ip', 'port'])
+    
+    # Uložení do CSV
+    results_df[output_columns].to_csv(args.output, index=False, encoding='utf-8')
     print(f"\nVýsledky byly uloženy do souboru {args.output}")
     
     # Výpis souhrnných statistik
-    web_servers = results_df['is_web'].sum()
-    redirects = results_df['redirect_url'].notna().sum()
     total_servers = len(results_df)
+    web_servers = results_df['is_web'].sum()
+    https_servers = len(results_df[results_df['protocol'] == 'https'])
+    http_servers = len(results_df[results_df['protocol'] == 'http'])
+    redirects = results_df['redirect_url'].notna().sum()
+    errors = results_df['error'].notna().sum()
     
     # Zobrazení výsledků v tabulce
     print_results_table(results_df)
     
+    # Výpis detailních statistik
     print(f"\n{Fore.CYAN}Souhrnné statistiky:{Style.RESET_ALL}")
     print(f"- Celkem zkontrolováno: {total_servers} serverů")
     print(f"- Nalezeno webových serverů: {Fore.GREEN}{web_servers}{Style.RESET_ALL}")
+    print(f"  - HTTPS: {Fore.GREEN}{https_servers}{Style.RESET_ALL}")
+    print(f"  - HTTP: {Fore.GREEN}{http_servers}{Style.RESET_ALL}")
     print(f"- Počet přesměrování: {Fore.YELLOW}{redirects}{Style.RESET_ALL}")
+    if errors > 0:
+        print(f"- Chyby při skenování: {Fore.RED}{errors}{Style.RESET_ALL}")
+    
+    # Logování základních statistik
+    logging.info(f"Scan completed - {web_servers}/{total_servers} web servers found")
+    logging.info(f"Results saved to {args.output}")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nSkenování přerušeno uživatelem")
+        sys.exit(1)
+    except Exception as e:
+        logging.error(f"Neočekávaná chyba: {str(e)}")
+        sys.exit(1)
