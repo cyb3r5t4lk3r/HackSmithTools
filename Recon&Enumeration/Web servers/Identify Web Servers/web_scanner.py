@@ -16,8 +16,14 @@ Description:
     Podporuje paralelní zpracování a komplexní logování.
 
 Usage:
-    python web_scanner.py -i <nmap_output_file> -o <output_file> [-v] [-d] [-w workers] [-t timeout]
+    python web_scanner.py -i <nmap_grepable_output_file> -o <output_file> [-v] [-d] [-w workers] [-t timeout]
 
+Extract: 
+    final_URL after redirection:
+        awk -F',' '$5 == "True" {print $9}' input.csv | grep -v "^final_url"
+    urls from protocol, ip, port:
+        awk -F',' '$5 == "True" {printf "%s://%s:%s\n", $4, $1, $3}' input.csv | grep -v "^protocol"
+    
 Arguments:
     -i, --input     : Vstupní soubor s NMAP grepovatelným výstupem
     -o, --output    : Výstupní CSV soubor s výsledky
@@ -54,7 +60,7 @@ init()
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 # Seznam portů, které chceme ignorovat
-IGNORED_PORTS = {21, 22, 23, 135, 139, 445, 3389}
+IGNORED_PORTS = {21, 22, 23, 135, 139, 445, 3389, 5060, 5900}
 
 def setup_logging(verbose: bool = False, debug: bool = False) -> None:
     """Nastavení logování na základě úrovně detailů."""
