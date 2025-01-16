@@ -4,7 +4,8 @@
 """
 Web Server Scanner
 -----------------
-Author: [Jméno autora]
+Author: Daniel Hejda
+Company: Cyber Rangers s.r.o.
 Version: 1.4.1
 Last update: 2024-12-17
 
