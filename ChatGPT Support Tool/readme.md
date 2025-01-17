@@ -75,6 +75,8 @@ PowerShell skript pro pokročilou komunikaci s OpenAI GPT asistentem pomocí ofi
 - Pravidelně obměňujte API klíče
 - Kontrolujte exportované soubory na citlivé informace
 
+## Video návod na použití
+![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/ChatGPT_PowerShell.gif)
 
 ## Disclaimer
 Tento nástroj je určen pro legitimní použití v rámci etického hackingu a penetračního testování. Autoři se zříkají odpovědnosti za jakékoliv zneužití nebo škody způsobené použitím tohoto nástroje.
