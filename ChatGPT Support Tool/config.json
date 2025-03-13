@@ -1,9 +1,0 @@
-﻿{
-    "ApiVersion":  "assistants=v2",
-    "Headers":  {
-                    "OpenAI-Beta":  "assistants=v2",
-                    "Authorization":  "Bearer XXXXX"
-                },
-    "OPENAI_API_KEY":  "XXXXX",
-    "AssistantId":  "asst_XXXXX"
-}
