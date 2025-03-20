@@ -561,7 +561,6 @@ function Start-LinkedInScraper {
         [bool]$Visible = $false
     )
     
-    #$CompanyId = "20120844"
     # Nastaveni spravneho kodovani vystupu
     Set-OutputEncoding
     
