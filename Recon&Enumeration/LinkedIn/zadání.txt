@@ -1,0 +1,41 @@
+Potřebuji naprogramovat LinkedIn scraper pro extrakci osob přidružených ke konkrétní společnosti. 
+Místo přístupu přes API LinkedIn (které je dostupné jen vybraným uživatelům) potřebuji extrahovat data přímo z webu. 
+
+Protože bych použil PowerShell tak je určitě možné využít nějaké třídy přímo z Windows místo použití Selenium scriptů. Minimalizuj počet řádků kódu, ale přidávej všude debug log v různých barvách, který volej jako funkci. Snaž se dělat vše v malých funkcích, které se budou dobře ladit.
+Pro kódování scriptu použijeme powershell, který je ve Windows x64 (Windows 11) a pro automatizaci použiejme Selenium modul pro powershell, který se nainstaluje, pokud neexistuje v systému. Další moduly se taktéž nainstalují, pokud jsou potřeba a v systému neexistují. Ideálně bychom měli použít pro přístup Microsoft Edge, který bude vždy ve Windows a neměli bychom spoléhat na dostupnost Chrome a nebo Firefox ve Windows.
+Na stránce je uvedeno jak lze používat Selenium v powershell https://www.zenrows.com/blog/selenium-powershell#extract-data
+TAktéž je potřeba psát kód powershell tak, že proměnné použité v "" budou zapisovány vždy takto $($promena) místo klasického použití $promena
+
+Nejprve se otevře okno pro přihlášení, kde uživatel zadá user name, password a případně MFA.
+Pak se přejde na stránku pro vyhledávání https://www.linkedin.com/search/results/people/?currentCompany=%5B%22660532%22%5D kde toto je ID společnosti které se zadává jako parametr 660532
+Poté se zobrazí stránka, která obsahuje osoby a nakonci tabulky je uveden pagging, kde je v tomto HTML uvedena poslední stránka paggingu <button aria-label="Stránka č. 39" type="button" data-ember-action="" data-ember-action-617="617"><span>39</span></button>
+Následně se na stránce extrahují informace o každé osobě (Fotka, Jméno a příjmení, pracovní pozice a město dané osoby)
+    - Fotka je v kódu sránky ozančena takto <img src="https://media.licdn.com/dms/image/v2/C4D03AQGEyE1kw5y8GQ/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1599137596878?e=1747872000&amp;v=beta&amp;t=5HKn7paYsJuBwXr5-5N_i68tmkN9YL-dG6jDmiH6pTM" loading="lazy" alt="Pavel Kryka" id="ember700" class="presence-entity__image  ivm-view-attr__img--centered EntityPhoto-circle-3   EntityPhoto-circle-3 evi-image lazy-image ember-view">
+    - Jméno osoby je takto <a class="bKitxDDAQqpwXZxDSIyHcsuFHqiIdTZqbQ " href="https://www.linkedin.com/in/pavel-kryka-703b61165?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAACeBBLMBnt15E45YR0GvA4RzIYSImbbDzUg" data-test-app-aware-link=""><span dir="ltr"><span aria-hidden="true"><!---->Pavel Kryka<!----></span><span class="visually-hidden"><!---->Zobrazit profil uživatele Pavel Kryka<!----></span></span><!----></a>
+    - Pozice je takto <a class="bKitxDDAQqpwXZxDSIyHcsuFHqiIdTZqbQ " href="https://www.linkedin.com/in/pavel-kryka-703b61165?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAACeBBLMBnt15E45YR0GvA4RzIYSImbbDzUg" data-test-app-aware-link=""><span dir="ltr"><span aria-hidden="true"><!---->Pavel Kryka<!----></span><span class="visually-hidden"><!---->Zobrazit profil uživatele Pavel Kryka<!----></span></span><!----></a>
+    - Město pak takto <div class="ugaguFCCiLFMkwjurKXZXmYOSRGGkdLJZk t-14 t-normal"><!---->Středočeský, Česko<!----></div>
+    - URL profilu je umístěna zde <a class="bKitxDDAQqpwXZxDSIyHcsuFHqiIdTZqbQ " href="https://www.linkedin.com/in/martina-bart%C3%A1kov%C3%A1-66b63b120?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAAB3-iPMBKfIZ0Dt6pPTUpdBJs598COL0As0" data-test-app-aware-link=""><span dir="ltr"><span aria-hidden="true"><!---->Martina Bartáková<!----></span><span class="visually-hidden"><!---->Zobrazit profil uživatele Martina Bartáková<!----></span></span><!----></a>
+U každé osoby pak dojde k extrakci a následně přechodu na další stránku. Adresa další stránky s lidmi je na adrese https://www.linkedin.com/search/results/people/?currentCompany=%5B%22660532%22%5D&origin=COMPANY_PAGE_CANNED_SEARCH&page=2&sid=UXF
+
+
+Konkrétní požadavky na scraper:
+1. Vstup bude ID společnosti. Například pro "pro.med.cs" je ID "660532".
+2. Scraper musí využít URL formátu: https://www.linkedin.com/search/results/people/?currentCompany=[%22ID%22]&origin=COMPANY_PAGE_CANNED_SEARCH&sid=XXX
+3. Musí implementovat procházení stránkování (URL s parametrem page=X).
+4. Pro každou nalezenou osobu chci extrahovat:
+   - Jméno
+   - Pozice ve firmě
+   - Lokalita
+   - URL profilu
+   - Profilový obrázek (stáhnout do lokálního adresáře)
+5. Výstup ukládat ve formátech:
+   - JSON
+   - CSV
+6. Scraper musí podporovat:
+   - Přihlášení s podporou MFA (dvoufaktorové ověřování) a bude řešeno interaktivním přihlášením
+   - Možnost ručního přihlášení v prohlížeči a následné automatické zpracování
+
+
+Příklad použití by mohl vypadat takto LinkedInPeopleScrapper.ps1 --company "660532" --manual-login --visible
+
+Prosím, vytvoř kompletní Powershell skript s důrazem na robustnost, správné odsazení kódu a ošetření možných chyb.
