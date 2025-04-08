@@ -24,6 +24,9 @@ Další atributy souborového systému
 - Stáhněte soubor Get-FileSystemAnalysis_v2.ps1
 - Spusťte PowerShell s oprávněními pro instalaci modulů (pokud nemáte nainstalován modul WriteAscii)
 
+### Ukázka spuštění a výstupu
+![Alt text](https://github.com/cyb3r5t4lk3r/HackSmithTools/blob/main/Media/FileSystemAnalyser.gif)
+
 ### Spuštění skriptu
 Skript lze spustit s následujícími parametry:
 
