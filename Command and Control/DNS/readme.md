@@ -41,23 +41,30 @@ Hlavním cílem je poskytnout funkční, ale přitom relativně jednoduchý nás
 ## Použití
 
 ### Server (Python)
+
 #### **Soubor:** `server.py`
+
 ##### **Prerekvizity:**
+
     - Linuxový systém (doporučeno, kvůli oprávněním a síťovým nástrojům).
     - Python 3.x.
     - Knihovna `dnslib`: `pip install dnslib` nebo `pip3 install dnslib`.
     - Práva roota (pro naslouchání na portu 53): Spouštět pomocí `sudo`.
+
 ##### **Konfigurace:**
+
     - Otevři soubor `dnsserver.py` v textovém editoru.
     - Najdi konstantu `LISTEN_IP` (na začátku souboru).
     - **Změň hodnotu `"VASE_VEREJNA_IP_ADRESA"` na skutečnou veřejnou IP adresu tvého serveru**, na které bude server naslouchat a na kterou se budou klienti připojovat. **Nenechávej zde `"0.0.0.0"` ani `"127.0.0.1"`**, pokud na serveru běží lokální DNS resolver (např. `systemd-resolved`), jinak server nenastartuje kvůli konfliktu portů.
 
 ##### **Spuštění:**
+
     ```bash
     sudo python3 dnsserver.py
     ```
 
 ##### **Příkazy konzole:**
+
     - `list`: Zobrazí seznam aktuálně připojených (registrovaných) klientů, jejich IP a čas posledního kontaktu.
     - `use <id_klienta | ip_klienta>`: Vybere klienta pro interakci. Můžeš použít ID klienta (např. `win_xxxxxx`) nebo jeho IP adresu. Prompt se změní na `C2 Server (id_klienta)>`.
     - `back`: Zruší výběr klienta. Prompt se vrátí na `C2 Server (Žádný klient)>`.
@@ -72,17 +79,24 @@ Hlavním cílem je poskytnout funkční, ale přitom relativně jednoduchý nás
 ### Klient (Rust)
 
 #### **Soubor:** `src/main.rs` (a `Cargo.toml`)
+
 #### **Cílová platforma:** Windows
+
 #### **Prerekvizity (Kompilace):**
+
     - Nainstalované **Rust** vývojové prostředí (např. pomocí `rustup` z [https://rustup.rs/](https://rustup.rs/)).
     - **Cargo** (Rust package manager, instaluje se s `rustup`).
     - Pro kompilaci na Windows může být potřeba "Build Tools for Visual Studio" nebo MinGW (pokud ještě nejsou nainstalovány) - `rustup` by měl nabídnout instalaci potřebných součástí.
     - Inicializace projektu ve složce s projektem pomocí `cargo init --bin`
+
 #### **Konfigurace:**
+
     - Otevři soubor `src/main.rs`.
     - Najdi konstantu `C2_IP` (na začátku souboru).
     - **Změň hodnotu IP adresy na veřejnou IP adresu tvého C2 serveru**, ke kterému se má klient připojovat. Musí to být stejná adresa, na které naslouchá server.
+
 #### **Kompilace:**
+
     1.  Otevři příkazový řádek nebo terminál ve složce projektu (kde jsou `Cargo.toml` a složka `src`).
     2.  Spusť příkaz pro kompilaci optimalizované release verze:
         ```bash
@@ -90,12 +104,15 @@ Hlavním cílem je poskytnout funkční, ale přitom relativně jednoduchý nás
         ```
     3.  Cargo stáhne potřebné závislosti (base64, rand, once_cell) a zkompiluje kód.
     4.  Výsledný spustitelný soubor se bude nacházet v podadresáři `target/release/`. Název souboru bude odpovídat názvu balíčku v `Cargo.toml` (např. `network_diagnostis_tool.exe`). Profil `release` v `Cargo.toml` zajišťuje optimalizace a odstranění debug symbolů (`strip = true`).
+
 #### **Spuštění:**
-    * Zkopíruj výsledný `.exe` soubor na cílový Windows stroj.
-    * Spusť `.exe` soubor (např. poklepáním nebo z příkazového řádku).
-    * Klient poběží na pozadí, nebude vidět žádné okno ani výstup na konzoli, ani nebude vytvářet logovací soubor. Automaticky se připojí k serveru a začne se dotazovat na příkazy.
+
+    - Zkopíruj výsledný `.exe` soubor na cílový Windows stroj.
+    - Spusť `.exe` soubor (např. poklepáním nebo z příkazového řádku).
+    - Klient poběží na pozadí, nebude vidět žádné okno ani výstup na konzoli, ani nebude vytvářet logovací soubor. Automaticky se připojí k serveru a začne se dotazovat na příkazy.
 
 ## Obfuskace a detekce
+
 Klient ve finální verzi obsahuje jen velmi základní úpravy ke snížení detekce:
 - Odstranění logování.
 - Odstranění debug symbolů a informací pomocí `strip = true` při kompilaci.
@@ -105,6 +122,7 @@ Klient ve finální verzi obsahuje jen velmi základní úpravy ke snížení de
 **Je důležité si uvědomit, že tyto úpravy nejsou robustní obfuskací.** Antivirové programy a EDR systémy mohou nástroj stále detekovat na základě jeho chování (specifické DNS dotazy, spouštění procesů `cmd.exe`/`powershell.exe`, síťová komunikace na port 53).
 
 ## Důležité upozornění
+
 - Tento nástroj je vytvořen **výhradně pro vzdělávací účely, bezpečnostní výzkum, testování a simulaci útoků v kontrolovaném a autorizovaném prostředí.**
 -  **Nikdy nepoužívejte tento nástroj pro nelegální aktivity nebo neoprávněný přístup** k systémům, které nevlastníte nebo ke kterým nemáte explicitní povolení k testování.
 -  Autor nenese **žádnou odpovědnost** za případné škody nebo nelegální použití tohoto nástroje. Uživatel přebírá veškerá rizika a odpovědnost.
