@@ -4,6 +4,7 @@ Recursive sourcemap audit helper for an authorized website.
 
 What it does:
   - crawls same-origin HTML pages from a start URL
+  - can also audit related external JS origins such as CDN or tag-manager hosts
   - discovers script src="..." references on every visited page
   - resolves absolute and relative URLs correctly
   - deduplicates JavaScript URLs across the whole site
@@ -14,9 +15,9 @@ What it does:
     opaque hash folders
 
 Usage:
-  python3 sourcemap_site_crawler_v3.py https://example.com --max-pages 200 --json report.json
-  python3 sourcemap_site_crawler_v3.py https://example.com --max-depth 5 --extract ./sources --json report.json
-  python3 sourcemap_site_crawler_v3.py https://example.com --extract ./sources --extract-layout per-map
+  python3 sourcemap_site_crawler_v4.py https://example.com --max-pages 200 --json report.json
+  python3 sourcemap_site_crawler_v4.py https://example.com --max-depth 5 --include-related-script-origins --extract ./sources --json report.json
+  python3 sourcemap_site_crawler_v4.py https://example.com --extract ./sources --extract-layout per-map
 
 Use only against systems where you have authorization.
 """
@@ -135,7 +136,7 @@ def fetch(url: str, timeout: int, accept: str = "*/*") -> Response:
     req = Request(
         url,
         headers={
-            "User-Agent": "Mozilla/5.0 sourcemap-site-crawler/1.1 (+authorized-security-testing)",
+            "User-Agent": "Mozilla/5.0 sourcemap-site-crawler/1.2 (+authorized-security-testing)",
             "Accept": accept,
         },
         method="GET",
@@ -164,6 +165,59 @@ def allowed_page_url(start_url: str, candidate: str, same_origin_only: bool) -> 
     if SKIP_EXT_RE.search(p.path):
         return False
     return True
+
+
+def origin(url: str) -> str:
+    p = urlparse(url)
+    return f"{p.scheme.lower()}://{p.netloc.lower()}"
+
+
+def host_matches_pattern(host: str, pattern: str) -> bool:
+    """
+    Supports:
+      example.com              exact host
+      *.example.com            subdomains only
+      .example.com             example.com and subdomains
+      https://cdn.example.com  exact origin host part is used
+    """
+    host = host.lower().strip()
+    pattern = pattern.lower().strip()
+    if not pattern:
+        return False
+    if "://" in pattern:
+        pattern = urlparse(pattern).netloc.lower()
+    if pattern.startswith("*."):
+        suffix = pattern[1:]  # .example.com
+        return host.endswith(suffix) and host != suffix[1:]
+    if pattern.startswith("."):
+        suffix = pattern[1:]
+        return host == suffix or host.endswith(pattern)
+    return host == pattern
+
+
+def allowed_by_patterns(url: str, patterns: list[str]) -> bool:
+    if not patterns:
+        return False
+    host = urlparse(url).netloc.lower()
+    return any(host_matches_pattern(host, p) for p in patterns)
+
+
+def allowed_script_url(
+    start_url: str,
+    candidate: str,
+    include_related_script_origins: bool,
+    allowed_origins: list[str],
+) -> bool:
+    p = urlparse(candidate)
+    if p.scheme not in {"http", "https"}:
+        return False
+    if not looks_like_js(candidate):
+        return False
+    if same_origin(start_url, candidate):
+        return True
+    if allowed_by_patterns(candidate, allowed_origins):
+        return True
+    return include_related_script_origins
 
 
 def looks_like_js(url: str) -> bool:
@@ -418,13 +472,34 @@ def audit_js(
     return MapResult(js_url=js_url, discovered_on_pages=pages, status="not_found", note="; ".join(tried[:12]))
 
 
-def crawl_site(start_url: str, max_pages: int, max_depth: int, timeout: int, delay: float, all_origins: bool) -> tuple[list[PageResult], dict[str, set[str]]]:
+def crawl_site(
+    start_url: str,
+    max_pages: int,
+    max_depth: int,
+    timeout: int,
+    delay: float,
+    all_origins: bool,
+    include_related_script_origins: bool,
+    allowed_origins: list[str],
+) -> tuple[list[PageResult], dict[str, set[str]], dict[str, set[str]]]:
+    """
+    Crawl HTML pages and collect JavaScript files.
+
+    Important behavior:
+      - HTML crawling is same-origin by default.
+      - When --include-related-script-origins is enabled, the crawler still crawls
+        same-origin HTML pages, but it also audits external JS files referenced
+        by those pages. This matches what DevTools Sources shows for CDN scripts.
+      - --all-origins changes HTML crawling too, so use it carefully.
+      - --allowed-origin can whitelist selected external hosts/patterns.
+    """
     start_url = normalize_url(start_url)
-    same_origin_only = not all_origins
+    same_origin_only_for_pages = not all_origins
     queue: collections.deque[tuple[str, int]] = collections.deque([(start_url, 0)])
     visited: set[str] = set()
     page_results: list[PageResult] = []
     js_to_pages: dict[str, set[str]] = collections.defaultdict(set)
+    related_script_origins: dict[str, set[str]] = collections.defaultdict(set)
 
     while queue and len(visited) < max_pages:
         page_url, depth = queue.popleft()
@@ -450,15 +525,20 @@ def crawl_site(start_url: str, max_pages: int, max_depth: int, timeout: int, del
 
             for src in parser.scripts:
                 absolute = normalize_url(urljoin(resolved_page_url, src))
-                if same_origin_only and not same_origin(start_url, absolute):
+                if urlparse(absolute).scheme not in {"http", "https"}:
                     continue
                 if looks_like_js(absolute):
+                    related_script_origins[origin(absolute)].add(absolute)
+                if allowed_script_url(start_url, absolute, include_related_script_origins, allowed_origins):
                     js_to_pages[absolute].add(resolved_page_url)
 
             for href in parser.links:
                 absolute = normalize_url(urljoin(resolved_page_url, href))
-                if not allowed_page_url(start_url, absolute, same_origin_only=same_origin_only):
-                    continue
+                # HTML crawling remains controlled separately from JS auditing.
+                if not allowed_page_url(start_url, absolute, same_origin_only=same_origin_only_for_pages):
+                    # Optional whitelist for selected related HTML origins.
+                    if not (allowed_origins and allowed_by_patterns(absolute, allowed_origins)):
+                        continue
                 if absolute not in visited and depth + 1 <= max_depth:
                     queue.append((absolute, depth + 1))
 
@@ -466,8 +546,7 @@ def crawl_site(start_url: str, max_pages: int, max_depth: int, timeout: int, del
         except Exception as e:
             page_results.append(PageResult(page_url, None, note=str(e)))
 
-    return page_results, js_to_pages
-
+    return page_results, js_to_pages, related_script_origins
 
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description="Recursively discover JavaScript sourcemaps for an authorized website.")
@@ -476,7 +555,18 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--delay", type=float, default=0.15, help="Delay between HTTP requests in seconds")
     ap.add_argument("--max-pages", type=int, default=200, help="Maximum HTML pages to crawl")
     ap.add_argument("--max-depth", type=int, default=5, help="Maximum link depth from start URL")
-    ap.add_argument("--all-origins", action="store_true", help="Also crawl/check third-party origins. Usually not recommended.")
+    ap.add_argument("--all-origins", action="store_true", help="Also crawl third-party HTML pages. Usually not recommended.")
+    ap.add_argument(
+        "--include-related-script-origins",
+        action="store_true",
+        help="Audit external JavaScript files referenced by crawled pages, such as CDN and tag-manager scripts, without crawling their HTML pages.",
+    )
+    ap.add_argument(
+        "--allowed-origin",
+        action="append",
+        default=[],
+        help="Allow selected external hosts/origins for JS auditing and optional HTML crawling. Can be repeated. Examples: a.examplecdn.com, *.examplecdn.com, https://cdn.example.com",
+    )
     ap.add_argument("--json", dest="json_path", help="Write JSON report")
     ap.add_argument("--extract", help="Directory for extracting embedded sourcesContent. Use only when authorized.")
     ap.add_argument(
@@ -489,7 +579,16 @@ def main(argv: list[str]) -> int:
     args = ap.parse_args(argv)
 
     extract_dir = Path(args.extract) if args.extract else None
-    pages, js_to_pages = crawl_site(args.url, args.max_pages, args.max_depth, args.timeout, args.delay, args.all_origins)
+    pages, js_to_pages, related_script_origins = crawl_site(
+        args.url,
+        args.max_pages,
+        args.max_depth,
+        args.timeout,
+        args.delay,
+        args.all_origins,
+        args.include_related_script_origins,
+        args.allowed_origin,
+    )
 
     results: list[MapResult] = []
     for js_url in sorted(js_to_pages):
@@ -503,8 +602,11 @@ def main(argv: list[str]) -> int:
             "max_pages": args.max_pages,
             "max_depth": args.max_depth,
             "same_origin_only": not args.all_origins,
+            "include_related_script_origins": args.include_related_script_origins,
+            "allowed_origins": args.allowed_origin,
         },
         "javascript_files_discovered": len(js_to_pages),
+        "related_script_origins_discovered": {k: len(v) for k, v in sorted(related_script_origins.items())},
         "sourcemaps_found": sum(1 for r in results if r.status == "found"),
         "sourcemaps_with_embedded_sources": sum(1 for r in results if r.has_embedded_sources),
         "extracted_files": sum(r.extracted_files for r in results),
