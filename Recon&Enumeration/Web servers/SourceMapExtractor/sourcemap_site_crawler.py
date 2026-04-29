@@ -9,11 +9,14 @@ What it does:
   - deduplicates JavaScript URLs across the whole site
   - detects sourcemaps by SourceMap/X-SourceMap headers, sourceMappingURL comments,
     and the common .js.map fallback
-  - optionally extracts embedded sourcesContent from found sourcemaps
+  - optionally extracts embedded sourcesContent from found sourcemaps while preserving
+    the source tree structure from the sourcemap instead of putting everything under
+    opaque hash folders
 
 Usage:
-  python3 sourcemap_site_crawler.py https://example.com --max-pages 200 --json report.json
-  python3 sourcemap_site_crawler.py https://example.com --max-depth 5 --extract ./sources --json report.json
+  python3 sourcemap_site_crawler_v3.py https://example.com --max-pages 200 --json report.json
+  python3 sourcemap_site_crawler_v3.py https://example.com --max-depth 5 --extract ./sources --json report.json
+  python3 sourcemap_site_crawler_v3.py https://example.com --extract ./sources --extract-layout per-map
 
 Use only against systems where you have authorization.
 """
@@ -25,16 +28,15 @@ import base64
 import collections
 import hashlib
 import json
-import os
 import re
 import sys
 import time
 from dataclasses import asdict, dataclass, field
 from html.parser import HTMLParser
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import NamedTuple
-from urllib.error import HTTPError, URLError
-from urllib.parse import urldefrag, urljoin, urlparse, urlunparse
+from urllib.error import HTTPError
+from urllib.parse import unquote, urldefrag, urljoin, urlparse, urlunparse
 from urllib.request import Request, urlopen
 
 SOURCE_MAPPING_RE = re.compile(r"(?://[#@]\s*sourceMappingURL=([^\s*]+)|/\*[#@]\s*sourceMappingURL=([^*]+)\*/)")
@@ -44,6 +46,7 @@ SKIP_EXT_RE = re.compile(
     r"\.(?:css|png|jpe?g|gif|svg|webp|ico|pdf|zip|rar|7z|gz|tgz|mp4|mp3|avi|mov|woff2?|ttf|eot)(?:[?#].*)?$",
     re.IGNORECASE,
 )
+WINDOWS_FORBIDDEN_RE = re.compile(r"[<>:\"|?*]")
 
 
 class Response(NamedTuple):
@@ -81,7 +84,6 @@ class PageParser(HTMLParser):
             if href:
                 self.links.append(href)
             return
-        # Some SPAs preload chunks this way.
         if tag_l == "link":
             rel = (attr.get("rel") or "").lower()
             href = attr.get("href")
@@ -115,6 +117,8 @@ class MapResult:
     sources_content_count: int = 0
     has_embedded_sources: bool = False
     sample_sources: list[str] = field(default_factory=list)
+    extracted_files: int = 0
+    extract_dir: str | None = None
     note: str | None = None
 
 
@@ -123,7 +127,6 @@ def normalize_url(url: str) -> str:
     p = urlparse(url)
     scheme = p.scheme.lower()
     netloc = p.netloc.lower()
-    # Keep query because hashed assets and routed pages may use it, but normalize empty path.
     path = p.path or "/"
     return urlunparse((scheme, netloc, path, "", p.query, ""))
 
@@ -132,7 +135,7 @@ def fetch(url: str, timeout: int, accept: str = "*/*") -> Response:
     req = Request(
         url,
         headers={
-            "User-Agent": "Mozilla/5.0 sourcemap-site-crawler/1.0 (+authorized-security-testing)",
+            "User-Agent": "Mozilla/5.0 sourcemap-site-crawler/1.1 (+authorized-security-testing)",
             "Accept": accept,
         },
         method="GET",
@@ -221,43 +224,146 @@ def parse_map_payload(map_url: str, content: bytes) -> tuple[dict, MapResult]:
 
 
 def parse_data_sourcemap(data_url: str) -> bytes | None:
-    # Handles: data:application/json;charset=utf-8;base64,....
     if not data_url.startswith("data:") or "," not in data_url:
         return None
     meta, payload = data_url.split(",", 1)
     if ";base64" in meta.lower():
         return base64.b64decode(payload)
     from urllib.parse import unquote_to_bytes
+
     return unquote_to_bytes(payload)
 
 
-def safe_source_path(base_dir: Path, source_name: str) -> Path:
-    cleaned = source_name.replace("webpack://", "webpack/").replace("..", "__")
-    cleaned = cleaned.lstrip("/\\")
-    cleaned = re.sub(r"[<>:\"|?*]", "_", cleaned)
-    path = (base_dir / cleaned).resolve()
-    if not str(path).startswith(str(base_dir.resolve())):
-        digest = hashlib.sha256(source_name.encode()).hexdigest()[:16]
-        path = base_dir / f"unsafe_path_{digest}.txt"
+def map_identity(map_url: str, js_url: str) -> str:
+    """Stable readable folder name for optional per-map extraction layout."""
+    url = map_url if map_url and map_url != "data:" else js_url
+    p = urlparse(url)
+    base = PurePosixPath(unquote(p.path)).name or "inline-sourcemap"
+    base = base.replace(".js.map", "").replace(".map", "")
+    digest = hashlib.sha256(url.encode()).hexdigest()[:10]
+    return sanitize_path_part(f"{base}-{digest}")
+
+
+def sanitize_path_part(part: str) -> str:
+    part = unquote(part).strip()
+    if part in {"", "."}:
+        return "_"
+    if part == "..":
+        return "__up__"
+    return WINDOWS_FORBIDDEN_RE.sub("_", part)
+
+
+def split_source_path(raw: str) -> list[str]:
+    """
+    Convert sourcemap source names to a safe relative path while preserving useful structure.
+
+    Examples:
+      webpack:///./src/app.js              -> webpack/src/app.js
+      webpack://project/./src/app.js      -> webpack/project/src/app.js
+      /assets/src/app.js                  -> webroot/assets/src/app.js
+      https://host/assets/src/app.js      -> url/host/assets/src/app.js
+      ../src/app.js                       -> __up__/src/app.js
+      node_modules/pkg/index.js           -> node_modules/pkg/index.js
+    """
+    s = str(raw or "").replace("\\", "/")
+    s = unquote(s)
+
+    # Remove loader prefixes like babel-loader!.../src/app.js and keep the real source path.
+    if "!" in s:
+        s = s.split("!")[-1]
+
+    parsed = urlparse(s)
+    parts: list[str]
+
+    if parsed.scheme in {"http", "https"}:
+        parts = ["url", parsed.netloc] + [p for p in parsed.path.split("/") if p]
+    elif parsed.scheme == "webpack":
+        # urlparse('webpack://project/./src/a.js') => netloc='project', path='/./src/a.js'
+        tail = [p for p in parsed.path.split("/") if p]
+        parts = ["webpack"]
+        if parsed.netloc:
+            parts.append(parsed.netloc)
+        parts.extend(tail)
+    elif parsed.scheme:
+        # Unknown virtual scheme, keep it visible but safe.
+        parts = [parsed.scheme]
+        if parsed.netloc:
+            parts.append(parsed.netloc)
+        parts.extend([p for p in parsed.path.split("/") if p])
+    else:
+        if s.startswith("/"):
+            parts = ["webroot"] + [p for p in s.split("/") if p]
+        else:
+            parts = [p for p in s.split("/") if p]
+
+    cleaned: list[str] = []
+    for part in parts:
+        if part == ".":
+            continue
+        cleaned.append(sanitize_path_part(part))
+
+    return cleaned or ["unknown-source.txt"]
+
+
+def source_output_path(base_dir: Path, source_name: str, source_root: str | None = None) -> Path:
+    if source_root:
+        # sourceRoot can be a virtual root such as webpack:// or a relative prefix.
+        root = source_root.replace("\\", "/")
+        if root and not root.endswith("/"):
+            root += "/"
+        combined = root + str(source_name).lstrip("/")
+    else:
+        combined = str(source_name)
+
+    relative_parts = split_source_path(combined)
+    path = (base_dir.joinpath(*relative_parts)).resolve()
+    base = base_dir.resolve()
+    if not str(path).startswith(str(base)):
+        digest = hashlib.sha256(combined.encode()).hexdigest()[:16]
+        path = base / f"unsafe_path_{digest}.txt"
     return path
 
 
-def extract_sources(map_data: dict, output_dir: Path) -> int:
+def unique_path(path: Path, content: str, overwrite: bool) -> Path:
+    if overwrite or not path.exists():
+        return path
+    try:
+        existing = path.read_text(encoding="utf-8", errors="replace")
+        if existing == content:
+            return path
+    except Exception:
+        pass
+    digest = hashlib.sha256(content.encode("utf-8", errors="replace")).hexdigest()[:8]
+    return path.with_name(f"{path.stem}.{digest}{path.suffix}")
+
+
+def extract_sources(map_data: dict, output_dir: Path, overwrite: bool = False) -> int:
     sources = map_data.get("sources") or []
     sources_content = map_data.get("sourcesContent") or []
+    source_root = map_data.get("sourceRoot")
     count = 0
     output_dir.mkdir(parents=True, exist_ok=True)
     for name, content in zip(sources, sources_content):
         if content is None:
             continue
-        path = safe_source_path(output_dir, str(name))
+        content_s = str(content)
+        path = source_output_path(output_dir, str(name), source_root=source_root)
+        path = unique_path(path, content_s, overwrite=overwrite)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(str(content), encoding="utf-8", errors="replace")
+        path.write_text(content_s, encoding="utf-8", errors="replace")
         count += 1
     return count
 
 
-def audit_js(js_url: str, pages: list[str], timeout: int, delay: float, extract_dir: Path | None) -> MapResult:
+def audit_js(
+    js_url: str,
+    pages: list[str],
+    timeout: int,
+    delay: float,
+    extract_dir: Path | None,
+    extract_layout: str,
+    overwrite: bool,
+) -> MapResult:
     try:
         time.sleep(delay)
         js_resp = fetch(js_url, timeout, accept="application/javascript,text/javascript,*/*")
@@ -294,9 +400,14 @@ def audit_js(js_url: str, pages: list[str], timeout: int, delay: float, extract_
                 result.map_status_code = mr.status
 
             if extract_dir and result.has_embedded_sources:
-                subdir = extract_dir / hashlib.sha256(js_url.encode()).hexdigest()[:12]
-                written = extract_sources(map_data, subdir)
-                extra = f"Extracted {written} embedded source files to {subdir}"
+                if extract_layout == "per-map":
+                    target_dir = extract_dir / map_identity(result.map_url or "data:", js_url)
+                else:
+                    target_dir = extract_dir
+                written = extract_sources(map_data, target_dir, overwrite=overwrite)
+                result.extracted_files = written
+                result.extract_dir = str(target_dir)
+                extra = f"Extracted {written} embedded source files to {target_dir}"
                 result.note = f"{result.note} {extra}" if result.note else extra
             return result
         except json.JSONDecodeError:
@@ -368,6 +479,13 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--all-origins", action="store_true", help="Also crawl/check third-party origins. Usually not recommended.")
     ap.add_argument("--json", dest="json_path", help="Write JSON report")
     ap.add_argument("--extract", help="Directory for extracting embedded sourcesContent. Use only when authorized.")
+    ap.add_argument(
+        "--extract-layout",
+        choices=["source-tree", "per-map"],
+        default="source-tree",
+        help="source-tree merges all recovered files into the original sourcemap paths. per-map puts each sourcemap into its own readable folder.",
+    )
+    ap.add_argument("--overwrite", action="store_true", help="Overwrite extracted files if paths collide. By default conflicting files are kept with a short hash suffix.")
     args = ap.parse_args(argv)
 
     extract_dir = Path(args.extract) if args.extract else None
@@ -376,7 +494,7 @@ def main(argv: list[str]) -> int:
     results: list[MapResult] = []
     for js_url in sorted(js_to_pages):
         pages_for_js = sorted(js_to_pages[js_url])[:25]
-        results.append(audit_js(js_url, pages_for_js, args.timeout, args.delay, extract_dir))
+        results.append(audit_js(js_url, pages_for_js, args.timeout, args.delay, extract_dir, args.extract_layout, args.overwrite))
 
     report = {
         "target": args.url,
@@ -389,6 +507,7 @@ def main(argv: list[str]) -> int:
         "javascript_files_discovered": len(js_to_pages),
         "sourcemaps_found": sum(1 for r in results if r.status == "found"),
         "sourcemaps_with_embedded_sources": sum(1 for r in results if r.has_embedded_sources),
+        "extracted_files": sum(r.extracted_files for r in results),
         "pages": [asdict(p) for p in pages],
         "results": [asdict(r) for r in results],
     }
